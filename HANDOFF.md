@@ -69,14 +69,73 @@ only the smoke test covers the runtime.
 - Wallet balance at time of writing: **0 USDC / 0 ETH** → PayAPI's $0.10 canary
   has not fired yet (their paid check is pending on their side).
 
-## Round 10 (planned) — fresh verification session
+## Round 10 (executed 22 Oct 2026, ~12h after deploy) — fresh verification session
 
-The user slept ~12h and wants a new session to re-verify everything and
-optimise. Its brief is written: **`CHECKUP-BRIEF.md`** (re-run all gates, check
-whether the canary fired by querying the Base RPC, re-check every external
-rail, then a safe optimisation pass — with the two paid-path landmines and the
-no-spending constraints spelled out). Nothing depends on this chat; the new
-session only needs to be told "read CHECKUP-BRIEF.md and execute it".
+Brief: `CHECKUP-BRIEF.md`. Everything re-verified; nothing decayed.
+
+**Internal gates — all green:**
+- `npm run typecheck` clean; `npm test` → **18/18**.
+- `npm run smoke:prod` → **10/10 PASS, 402 in 183ms** (<400ms target).
+- `/diag` → bundled snapshot present (44 kinds), live facilitator handshake ok
+  in 403ms.
+- MCP worker: `initialize` 200 in 290ms, `tools/list` 4 tools in 259ms,
+  `tools/call` → x402 challenge in 326ms (the MCP challenge carries a full
+  `bazaar` declaration — that path never runs Ajv, by design).
+- Local probe timings flake occasionally via the TLS proxy (known trap);
+  repeated runs were consistent, so nothing to investigate.
+
+**The 12-hour question — wallet `0x0552…` on Base: 0 USDC / 0 ETH, nonce 0.**
+The PayAPI canary has **not** fired yet. Not overdue: they promise review
+"within 24h". PayAPI public index (`payapi.market/agent/search?q=arabic`)
+still shows only the 2 other listings (Hijri converter, YouTube transcript) —
+ours absent, which is correct until the canary passes (index only lists
+settlement-verified). A polite status-inquiry email is **prepared but not
+sent**: `draft-payapi-email.md`. Send it from `skypantherr@hotmail.com` only
+if ~24h pass with no change.
+
+**External rails:**
+- x402scan: 5/5 resources, **0 transactions / $0.00 / 0 buyers** (unchanged).
+- Coinbase Bazaar validator: **now rejects all five REST routes**
+  (`valid: false`, "no bazaar discovery extension found") — the earlier
+  round-7 "valid: true" was measured *before* the bazaar extension was removed
+  from the paid path in round 9, so this is the expected consequence, not a
+  regression. Trade-off stands: a working 402 > live discovery declaration. Do
+  not re-add `extensions.bazaar` to the REST paid path (Ajv → `new Function`
+  → hangs on Workers). Options remain: re-register, or move paid service to a
+  Node VPS runtime. The MCP challenge *does* carry the extension, but
+  Coinbase's validator cannot probe the MCP endpoint itself (it sends no
+  `Accept: application/json, text/event-stream`, so it gets 406 — validator
+  limitation, not our bug).
+- MCP registry: `io.github.skypantherr/arabic-pipeline` v0.1.0, **status
+  active** — nothing pending from the user there.
+- GitHub: working tree clean; local head == `origin/main`.
+- README on GitHub verified current via the contents API (all links correct).
+
+**Optimisation pass (what shipped):**
+1. **`scripts/daily-check.mjs` (`npm run check:daily`)** — one command that
+   runs all internal gates, reads the wallet balance from the Base RPC, scrapes
+   x402scan numbers via r.jina.ai, checks the PayAPI index and the MCP
+   registry, and appends one line to the new append-only log section at the
+   bottom of `SCOREBOARD.md`. Built from scratch — the brief said
+   `wallet-check.mjs`/`live-check.mjs` already existed, but neither did.
+   Retries each HTTP fetch once because of the TLS-proxy trap. WARNs (exit 2)
+   only on genuine check failures; expected states (listing not live yet)
+   are recorded, not warned.
+   First two log entries appended; the first run caught a spurious registry
+   miss (proxy flake), the clean rerun confirmed `active`.
+2. `draft-payapi-email.md` — the canary status inquiry, triggers documented.
+3. OpenAPI discoverability re-verified rather than changed: all 5 operations
+   carry correct `x-payment-info` (fixes prices matching the live 402), per-op
+   `x-bazaar`, plus `info.x-guidance` and contact email. `/diag` clean.
+   README current. Nothing to fix.
+4. Latency from other regions: a free multi-region probe (check-host.net,
+   Bulgaria / Brazil / Spain / Turkey / USA) was launched. Results pending at
+   the time this section was written — local/edge timings (402 in 18–183ms)
+   are already tight; verify the report before worrying.
+
+**Why nothing more was changed in the paid path:** no gate showed a decay, so
+`npm run smoke:prod` was run for verification only — there is nothing to
+re-optimise without user-side actions (canary status, key rotation).
 
 ## Round 7 — deploy session: what actually shipped
 
