@@ -209,7 +209,16 @@ suspected Worker hang from inside Cloudflare before changing Worker code.**
   Verified: no key patterns, no `gho_` tokens and no assigned
   `GEMINI_API_KEY=` values anywhere in the pushed tree (35 files).
   - The repo's `repository` field in `server.json` now points at a real
-    public repo, so the MCP registry entry's link resolves.
+    public repo, so the MCP registry entry's link resolves. The registry
+    entry was re-read after the push and shows
+    `repository: https://github.com/skypantherr/arabic-pipeline`,
+    `remotes[0].url: https://arabic-pipeline-mcp.arabic-pipeline.workers.dev/`,
+    status `active`.
+  - Note when verifying README content on GitHub: `raw.githubusercontent.com`
+    served a **stale cached copy** for several minutes after the push. The
+    authoritative check is the GitHub contents API
+    (`/repos/skypantherr/arabic-pipeline/contents/README.md?ref=main`),
+    which returned the updated file immediately.
 
 ## Tool notes (new this session)
 - `wrangler tail` output is the fastest way to see Worker-side exceptions; the
