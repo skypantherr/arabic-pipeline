@@ -167,3 +167,10 @@ chance of a few hundred dollars a month and a much larger chance of zero —
 and the kill criteria exist so that "zero" happens at day 30 with a clear next
 move (repoint the same engine at a thinner, better-evidenced class) rather
 than at month six with sunk cost.
+
+## Daily check log (append-only)
+
+One line per run of `npm run check:daily`. Newest last. Never rewrite past entries.
+
+- 2026-10-22 17:09 UTC — balance: 0.000000 USDC (no payments yet) · 0.00000000 ETH | paid route: 402, 18ms, challenge correct | x402scan: tx 0 · vol $0.00 · buyers 0 | PayAPI: not live yet (2 other 'arabic' listings; index only shows settlement-verified) | registry: not found | WARN: PayAPI index, MCP registry
+- 2026-10-22 17:10 UTC — balance: 0.000000 USDC (no payments yet) · 0.00000000 ETH | paid route: 402, 33ms, challenge correct | x402scan: tx 0 · vol $0.00 · buyers 0 | PayAPI: not live yet (2 other 'arabic' listings; index only shows settlement-verified) | registry: io.github.skypantherr/arabic-pipeline v0.1.0 status=active | all green

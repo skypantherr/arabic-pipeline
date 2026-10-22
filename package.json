@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "smoke": "node scripts/smoke-paid-route.mjs",
     "smoke:prod": "node scripts/smoke-paid-route.mjs https://arabic-pipeline.arabic-pipeline.workers.dev",
+    "check:daily": "node scripts/daily-check.mjs",
     "typecheck": "tsc --noEmit",
     "login": "wrangler login"
   },
