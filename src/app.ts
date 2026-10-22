@@ -8,7 +8,7 @@ import {
 import { PRICES, ROUTE_DESCRIPTIONS, usd, type AppConfig } from "./config";
 import { CachedFacilitatorClient } from "./lib/facilitator";
 import { normalizeArabic, textMetrics, type NormalizeMode } from "./lib/arabic";
-import { GeminiError, extractDocument, transcribeAudio } from "./lib/gemini";
+import { GeminiError, extractDocument, geminiKeyStatus, transcribeAudio } from "./lib/gemini";
 import { buildOpenApi } from "./lib/openapi";
 
 const MAX_DOC_BYTES = 12 * 1024 * 1024; // 12 MB base64 payload ceiling
@@ -204,12 +204,26 @@ export function createApp(cfg: AppConfig, facilitatorClient: FacilitatorClient) 
     } catch (err) {
       live = { ok: false, ms: Date.now() - t0, error: String(err).slice(0, 140) };
     }
+    /**
+     * Whether the deployed GEMINI_API_KEY actually works, as seen from this
+     * Worker. Free (model-metadata GET, no tokens). The key can only be
+     * rotated by hand in a terminal, so a stale secret would otherwise
+     * surface as a 502 on a buyer's first paid model call.
+     */
+    let geminiKey: Record<string, unknown>;
+    if (!cfg.geminiApiKey) {
+      geminiKey = { configured: false };
+    } else {
+      const s = await geminiKeyStatus(cfg.geminiApiKey, cfg.transcribeModel);
+      geminiKey = { configured: true, ok: s.ok, ms: s.ms, status: s.status ?? null, error: s.error ?? null };
+    }
     return c.json({
       network: cfg.network,
       payTo: cfg.payTo,
       facilitator: cfg.facilitatorUrl,
       bundledSnapshot: CachedFacilitatorClient.snapshotInfo,
       liveHandshake: live,
+      geminiKeyStatus: geminiKey,
       routes: Object.keys(PRICES),
     });
   });

@@ -137,6 +137,25 @@ if ~24h pass with no change.
 `npm run smoke:prod` was run for verification only — there is nothing to
 re-optimise without user-side actions (canary status, key rotation).
 
+**Follow-ups later the same day (same session, after the report):**
+- **Gemini key rotation: DONE by the user** (early 22 Oct, with help from
+  another session): new key installed in a terminal with echo off, old key
+  deleted in AI Studio. `check-gemini.mjs` passes with both models.
+  *Proof it reached production:* `/diag` now reports `geminiKeyStatus`
+  (added in `src/app.ts`/`src/lib/gemini.ts` — a free, tokenless
+  model-metadata GET from the Worker; a deleted key returns 401/403, a live
+  one 200). Live result: `configured: true, ok: true, 200 in 412ms` → the
+  Worker holds the new key; the model routes are live.
+  Deploy version after the /diag change: `4e9d21c6`; `npm run smoke:prod`
+  after the deploy → 10/10 PASS (paid path untouched by the change, smoke run
+  anyway per the rule).
+  `npm run check:daily` now includes key validity in the `/diag` check.
+- **Bounty lane / X-token-promo question: ON HOLD per the user** — do not
+  spend sessions on it until the user reopens it.
+- Remaining user actions: watch for the PayAPI canary (run
+  `npm run check:daily`; if wallet still 0 after 24h send
+  `draft-payapi-email.md`), and record the canary tx hash when it lands.
+
 ## Round 7 — deploy session: what actually shipped
 
 **Deployed (Cloudflare account `367298d6e5c8558c19da9abbf1f00eb9`):**
@@ -309,14 +328,11 @@ suspected Worker hang from inside Cloudflare before changing Worker code.**
      live. Next we pay one call… No action needed unless we email you.")
      confirms the **form** was accepted and the paid check is still pending.
      Nothing is required from the user unless PayAPI emails a failure.
-3. **Gemini key rotation.** The user has created a new key in Google AI
-   Studio but has not installed it. They run
-   `node scripts/set-gemini-key.mjs --deploy` in their own terminal — the key
-   is typed with echo off and piped straight into the Worker secret, so it
-   never enters the agent's chat context. **Then they delete the old key in
-   AI Studio** (it was pasted into a chat, so treat it as public). Order
-   matters: install new → verify with `node scripts/check-gemini.mjs` →
-   delete old, so `/audio/transcribe` and `/doc/extract` never go dark.
+3. **Gemini key rotation.** ~~The user has created a new key in Google AI
+   Studio but has not installed it.~~ **Done 22 Oct 2026** — new key installed
+   via the terminal script, old key deleted in AI Studio, and the deployed
+   Worker's key verified live via the new `/diag` `geminiKeyStatus` field
+   (200 OK from the edge). See Round 10.
 
 ### Done — for the record
 - **MCP registry publish**: the user completed the GitHub device-code login

@@ -58,15 +58,22 @@ async function timedFetch(url, opts = {}, timeoutMs = 15000) {
 }
 {
   const d = await timedFetch(`${REST}/diag`);
-  let kinds = null;
+  let kinds = null, gem = null;
   try {
-    kinds = JSON.parse(d.body)?.bundledSnapshot?.kinds ?? null;
+    const j = JSON.parse(d.body);
+    kinds = j?.bundledSnapshot?.kinds ?? null;
+    gem = j?.geminiKeyStatus ?? null;
   } catch { /* covered by the recorded result */ }
-  const ok = d.status === 200 && kinds === 44;
+  const ok = d.status === 200 && kinds === 44 && (gem === null || gem.ok === true);
+  const gemNote = gem
+    ? gem.configured
+      ? `, gemini key ${gem.ok ? "valid (live, " + gem.ms + "ms)" : "INVALID — model routes are dark, rotate again"}`
+      : ", gemini key not configured"
+    : "";
   record(
     "REST /diag (bundled snapshot)",
     ok,
-    ok ? `${kinds} kinds in ${d.ms}ms` : `status ${d.status}, kinds ${kinds ?? "unreadable"}`,
+    ok ? `${kinds} kinds in ${d.ms}ms${gemNote}` : `status ${d.status}, kinds ${kinds ?? "unreadable"}`,
   );
 }
 {

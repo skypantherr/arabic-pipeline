@@ -72,6 +72,32 @@ async function callGemini(
   return { text, usage: json.usageMetadata };
 }
 
+/**
+ * Key liveness for the /diag route.
+ *
+ * Checks the configured model's *metadata* endpoint (a GET that returns the
+ * model description — no prompt, no tokens, effectively free) to answer the
+ * question "does the key installed on this Worker still work?" without having
+ * to make a paid model call. This exists because the Gemini key was rotated
+ * by hand in a terminal, and a stale secret on a deployed Worker would only
+ * show up as a 502 on a buyer's first paid model call.
+ */
+export async function geminiKeyStatus(apiKey: string, model: string): Promise<{
+  ok: boolean;
+  ms: number;
+  status?: number;
+  error?: string;
+}> {
+  const t0 = Date.now();
+  try {
+    const url = `${API_BASE}/${encodeURIComponent(model)}?key=${encodeURIComponent(apiKey)}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    return { ok: res.ok, ms: Date.now() - t0, status: res.status };
+  } catch (err) {
+    return { ok: false, ms: Date.now() - t0, error: String(err).slice(0, 140) };
+  }
+}
+
 const TRANSCRIBE_PROMPT = `Transcribe this audio verbatim in its original language.
 Rules:
 - Output ONLY the transcription. No preamble, no translation, no commentary.
