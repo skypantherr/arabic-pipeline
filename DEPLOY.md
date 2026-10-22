@@ -153,6 +153,9 @@ Worker) before changing Worker code.
     - The registry verifies you control the **namespace** in `name`
       (`io.github.skypantherr/arabic-pipeline` under GitHub auth). It does not
       verify the remote URL.
+    - **Done 22 Oct 2026**: published as `io.github.skypantherr/arabic-pipeline`
+      v0.1.0, status `active`. Verify with
+      `GET https://registry.modelcontextprotocol.io/v0/servers?search=arabic-pipeline`.
 12. **x402scan registry** — `https://www.x402scan.com/resources/register`
     (free, wallet auth). Bonus: x402scan is the explorer that indexes calls and
     revenue, so the listing becomes observable — you can see your own calls and

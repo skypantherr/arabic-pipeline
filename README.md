@@ -20,7 +20,7 @@ url https://payapi.market/mcp
 | **MCP server** (streamable HTTP) | `https://arabic-pipeline-mcp.arabic-pipeline.workers.dev/` |
 | OpenAPI | `https://arabic-pipeline.arabic-pipeline.workers.dev/openapi.json` |
 | x402scan | `https://www.x402scan.com/server/298e1e2b-3f5c-4890-9791-6d063fd20931` |
-| MCP registry | `io.github.skypantherr/arabic-pipeline` |
+| MCP registry | `io.github.skypantherr/arabic-pipeline` (v0.1.0, active) |
 
 The MCP server exposes the same four capabilities as tools, each behind its
 own x402 payment (`text_metrics`, `text_normalize`, `audio_transcribe`,

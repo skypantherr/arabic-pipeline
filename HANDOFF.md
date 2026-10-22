@@ -55,10 +55,13 @@ their canary is the right proof and why we do not need to fund anything.
 - x402scan — **"Successfully registered 5 of 5 resources"**.
   Page: `https://www.x402scan.com/server/298e1e2b-3f5c-4890-9791-6d063fd20931`
   Merchant page: `https://tryponcho.com/m/arabic-pipeline.arabic-pipeline.workers.dev`
-- MCP registry — `server.json` **validates** (`mcp-publisher validate`).
-  Name `io.github.skypantherr/arabic-pipeline`, remote
-  `https://arabic-pipeline-mcp.arabic-pipeline.workers.dev/`. Publish needs
-  GitHub device-code auth (see "Still open").
+- MCP registry — **published 22 Oct 2026**:
+  `io.github.skypantherr/arabic-pipeline` v0.1.0, status `active`, remote
+  `https://arabic-pipeline-mcp.arabic-pipeline.workers.dev/`.
+  Verify with
+  `GET https://registry.modelcontextprotocol.io/v0/servers?search=arabic-pipeline`.
+  `server.json` is the source of truth for the entry — change it there and
+  re-run `mcp-publisher publish server.json`.
 - Coinbase x402 Bazaar — **not done, and the cause is a real bug (below).**
   `POST https://api.cdp.coinbase.com/platform/v2/x402/validate` rejects the
   REST routes with `has_bazaar_extension: No bazaar extension in top-level
@@ -168,19 +171,30 @@ suspected Worker hang from inside Cloudflare before changing Worker code.**
 4. **Gemini key rotation**, whenever the user gets to it (their own browser).
 
 ## Still open — needs the user
-1. **GitHub device-code login for the MCP registry** (one click):
-   `mcp-publisher login github` prints a code; go to
-   `https://github.com/login/device`, enter it, authorize. Then
-   `mcp-publisher publish server.json` in this folder publishes it as
-   `io.github.skypantherr/arabic-pipeline`. **No GitHub password or token is
-   ever shared with the agent** — the CLI does the OAuth handshake itself.
-   The device code expires after a few minutes, so run the command and
-   authorize promptly.
-2. **Push the repo to GitHub** (`skypantherr/arabic-pipeline`). GitHub Desktop
-   is signed in; `git` has credential helper `manager` but no remote is
-   configured yet. The registry entry references the repo URL, so
-   `repository` should point at a real public repo.
+1. **Push the repo to GitHub** (`skypantherr/arabic-pipeline`). The MCP
+   registry entry's `repository` field already points at
+   `https://github.com/skypantherr/arabic-pipeline`, but that repo does not
+   exist yet. The MCP **publish** is done (it only needed the namespace
+   check), but the repository link is dead until the repo is pushed.
+   **Note on the local git credential:** `git credential fill` on this machine
+   returns a token for a *different* GitHub account
+   (`Abdullah-N-Abdalaziz`), and GitHub Desktop's own token store is empty —
+   so an agent-side `git push` would push to the wrong account. The user must
+   do it (GitHub Desktop is signed in as `skypantherr`).
+2. **Confirm the PayAPI canary** when their email arrives, and record the
+   receipt hash. PayAPI reviews within 24h and then pays the listed route
+   once (cap $0.10); the receipt becomes the listing's settlement-verified
+   badge. Re-check with `GET https://payapi.market/agent/search?q=arabic`
+   (that index only shows live + verified listings, so absence before then is
+   expected, not a failure).
 3. **Gemini key rotation**, whenever the user gets to it (their own browser).
+
+### Done — for the record
+- **MCP registry publish**: the user completed the GitHub device-code login
+  and `mcp-publisher publish server.json` succeeded. No GitHub password or
+  token was ever shared with the agent — the CLI performs the OAuth
+  handshake itself and stores the token at
+  `~/.config/mcp-publisher/token.json`.
 
 ## Tool notes (new this session)
 - `wrangler tail` output is the fastest way to see Worker-side exceptions; the
