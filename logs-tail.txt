@@ -1,0 +1,6 @@
+﻿
+ Γ¢à∩╕Å wrangler 4.151.3
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Successfully created tail, expires at 2026-10-22T08:03:24Z
+Connected to arabic-pipeline, waiting for logs...
+POST https://arabic-pipeline.arabic-pipeline.workers.dev/text/normalize - Ok @ 10/22/2026, 5:03:29 AM
