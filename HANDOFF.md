@@ -69,6 +69,15 @@ only the smoke test covers the runtime.
 - Wallet balance at time of writing: **0 USDC / 0 ETH** → PayAPI's $0.10 canary
   has not fired yet (their paid check is pending on their side).
 
+## Round 10 (planned) — fresh verification session
+
+The user slept ~12h and wants a new session to re-verify everything and
+optimise. Its brief is written: **`CHECKUP-BRIEF.md`** (re-run all gates, check
+whether the canary fired by querying the Base RPC, re-check every external
+rail, then a safe optimisation pass — with the two paid-path landmines and the
+no-spending constraints spelled out). Nothing depends on this chat; the new
+session only needs to be told "read CHECKUP-BRIEF.md and execute it".
+
 ## Round 7 — deploy session: what actually shipped
 
 **Deployed (Cloudflare account `367298d6e5c8558c19da9abbf1f00eb9`):**
