@@ -2,6 +2,13 @@
 
 Everything below is ordered. Steps marked **[USER]** need a human click.
 
+> **Status 22 Oct 2026: LIVE.** REST API on
+> `https://arabic-pipeline.arabic-pipeline.workers.dev`, MCP server on
+> `https://arabic-pipeline-mcp.arabic-pipeline.workers.dev`. PayAPI listing
+> submitted, x402scan 5/5 registered, Coinbase's Bazaar validator accepts all
+> five routes. See `HANDOFF.md` (round 7) for the two bugs that had to be
+> fixed to get here, and `SCOREBOARD.md` for the 30-day plan.
+
 ---
 
 ## Phase 0 — already done (verified locally)
@@ -26,9 +33,10 @@ Everything below is ordered. Steps marked **[USER]** need a human click.
 - [x] `.dev.vars` created (git-ignored) with `GEMINI_API_KEY`; `.dev.vars.example`
       is the committed template.
 
-> **Do this before going live:** the Gemini key was pasted into a chat, so treat
-> it as public. Revoke it in Google AI Studio, create a fresh key, and put the
-> new one in `.dev.vars` (local) and `npm run secret` (production).
+> **Key rotation is deliberately deferred** (user's instruction): the key in
+> `.dev.vars` works and is set as a production secret. When the user chooses
+> to rotate it, they create the new key themselves in their own browser and
+> run `npm run secret`. Do not open Google sign-in in the agent browser.
 
 ---
 
@@ -53,12 +61,11 @@ These checks cost $0 and cover most of the risk:
 4. After deploying: `GET /`, `GET /health`, `GET /openapi.json` are free and
    prove the Worker is live.
 
-**The only step that needs money** is one real $0.01 payment (Phase 2, step 9)
-to prove settlement. Sources, cheapest first:
-- the **first Superteam Earn bounty payout** ($25 USDC) — the fast lane is
-  already the plan and it funds this;
-- or **$1 of USDC sent to the wallet by anyone** (friend, colleague) on Base.
-  The buyer needs USDC only, never ETH, because the facilitator sponsors gas.
+**The only step that needs money** is one real payment to prove settlement.
+Its source is PayAPI's own canary: when the listing is approved, PayAPI pays
+one call to the listed route (cap $0.10) from their wallet, and the
+settlement receipt becomes the listing's badge. We do not need to hold any
+USDC ourselves to prove the service works.
 
 A testnet rehearsal is optional and not required.
 
@@ -78,19 +85,45 @@ A testnet rehearsal is optional and not required.
      *Account → Workers Scripts: Edit*.
 7. **Gemini key (production secret).** Either type it when prompted
    (`npm run secret` → `GEMINI_API_KEY` → paste → Enter), or pipe it
-   non-interactively: `echo "<key>" | npx wrangler secret put GEMINI_API_KEY`.
-   **Rotate it first** — the current one was pasted into a chat, so treat it as
-   public: revoke it in Google AI Studio and issue a new one. The new key also
-   goes into `.dev.vars` for local dev.
+   non-interactively: `Get-Content .dev.vars | Select-String '^GEMINI_API_KEY=' | ForEach-Object { $_.Line.Split('=')[1] } | npx wrangler secret put GEMINI_API_KEY`.
+   The new key also goes into `.dev.vars` for local dev.
 8. `npm run deploy` → gives the `https://arabic-pipeline.<sub>.workers.dev` URL.
+   The MCP server is a **second Worker** with its own config file:
+   `npx wrangler deploy -c wrangler.mcp.toml`.
 9. Sanity checks against the live URL:
    - `GET /` → service info (200).
    - `GET /openapi.json` → spec (200).
    - `GET /health` → 200.
    - `POST /text/normalize` without payment → 402 with the correct challenge.
    - `POST /text/normalize` with a real payment → 200 + a BaseScan receipt
-     landing in `0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6`. Needs **$0.01
-     USDC** on Base in the *buyer* wallet; no ETH needed.
+     landing in `0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6`.
+
+### ⚠ Two things that break paid routes on Workers (both fixed here)
+
+Do not reintroduce either. Both produced the *same* symptom — paid requests
+hanging instead of returning 402 — so read the fix before changing
+`src/app.ts` or `src/index.ts`.
+
+1. **Never let the SDK validate a Bazaar declaration.** Declaring
+   `extensions.bazaar` on a route makes the SDK validate it with Ajv, which
+   compiles JSON Schema via `new Function` — forbidden on Workers. The failure
+   happens inside the request path, so the isolate dies mid-request. The fix
+   in `src/app.ts`: build the routes *without* `extensions`, register
+   `bazaarResourceServerExtension` on the resource server ourselves, and only
+   then attach the declaration to the route configs. There is no
+   `unsafe_eval` compatibility flag to fall back on — the API rejects it.
+2. **Do not let a paid request wait on a cold facilitator handshake.** The
+   middleware awaits `initialize()` (a `/supported` fetch) before answering
+   the first paid request of an isolate, and the SDK retries a throttled
+   handshake with exponential backoff — ~7s of dead time for the buyer.
+   `src/lib/facilitator.ts` caches the handshake at the edge (15 min, keyed on
+   our own origin because the Cache API only stores same-zone entries).
+
+**Measurement trap:** this sandbox reaches the internet through a
+TLS-intercepting proxy, so a few percent of local `fetch` calls hang for
+reasons that have nothing to do with the Worker. Confirm any suspected Worker
+hang **from inside Cloudflare** (probe the production URL from a throwaway
+Worker) before changing Worker code.
 
 ## Phase 3 — publish the listing (this is what makes agents find you)
 
@@ -105,21 +138,44 @@ A testnet rehearsal is optional and not required.
       `*.workers.dev` URL is durable and fine), prepaid credits instead of
       per-call x402, a `payTo` that isn't the wallet on the form, duplicate
       product listings.
+    - **Done 22 Oct 2026**: listing submitted; the canary is PayAPI's side of
+      the deal and runs on their review schedule (they say within 24h). The
+      receipt hash appears on the listing once it goes live.
 11. **Official MCP registry** — publish the MCP server (see Phase 4). 486 of
     PayAPI's 832 listings expose an MCP endpoint; that is how Claude Desktop,
     Cursor and agent runtimes actually call tools.
+    - `server.json` is written and **validates** (`mcp-publisher validate`).
+    - Publishing needs a GitHub device-code login:
+      `mcp-publisher login github` → open `https://github.com/login/device` →
+      enter the code → authorize → `mcp-publisher publish server.json`.
+    - The CLI is a GitHub release binary, not an npm package:
+      `https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_windows_amd64.tar.gz`.
+    - The registry verifies you control the **namespace** in `name`
+      (`io.github.skypantherr/arabic-pipeline` under GitHub auth). It does not
+      verify the remote URL.
 12. **x402scan registry** — `https://www.x402scan.com/resources/register`
     (free, wallet auth). Bonus: x402scan is the explorer that indexes calls and
     revenue, so the listing becomes observable — you can see your own calls and
     earnings there.
 13. **Coinbase x402 Bazaar** — discovery layer for agents:
     `https://docs.cdp.coinbase.com/x402/seller/get-discovered`.
+    - Validate (no API key needed):
+      `POST https://api.cdp.coinbase.com/platform/v2/x402/validate`
+      with `{"resource":"<paid route URL>","method":"POST"}`.
+    - **Done 22 Oct 2026**: all five routes return `valid: true` /
+      `simulation.outcome: "accepted"` with a populated `bazaarExtension`.
+    - Actual indexing happens on a **settled payment through the CDP
+      Facilitator**; dexter.cash is the facilitator in use here, so indexing
+      there is not automatic.
 14. **MCP server** — add it with the official package (`@x402/mcp`); wrap the
     same four handlers as tools. Name it `io.github.skypantherr/arabic-pipeline`.
     Put `url https://payapi.market/mcp` in the README (done) and in the MCP
     server description so agents know where to search.
+    - **Done 22 Oct 2026**: `https://arabic-pipeline-mcp.arabic-pipeline.workers.dev/`
+      (streamable HTTP), 4 tools, each behind its own x402 payment.
 15. **GitHub** — create the repo (`skypantherr/arabic-pipeline`) and push. GitHub
     Desktop is installed and signed in; the `gh` CLI is not.
+    - The repo URL in `server.json` should point at a real public repo.
 
 ## Phase 4 — the 30-day test
 
