@@ -22,13 +22,27 @@ Secondary, tracked but never a success criterion:
 
 ### Where to read the numbers
 
-- x402scan — your resource page shows calls and revenue per resource:
+- x402scan — your resource page shows calls and revenue per resource, plus a
+  "Past 30 Days" panel with Transactions / Volume / Buyers:
   `https://www.x402scan.com/server/298e1e2b-3f5c-4890-9791-6d063fd20931`
+  (registered 22 Oct 2026 with 5 of 5 resources; baseline was 0 transactions,
+  $0.00, 0 buyers).
 - PayAPI Market — `https://payapi.market/agent/search?q=arabic` lists your
   listing once it is live and settlement-verified, with the on-chain receipt.
+  Until then it is not in that index (it only lists live + verified listings),
+  so check the confirmation email instead.
 - Your own wallet `0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6` on Base —
   every settled call lands there as USDC. This is the ground truth; the
   dashboards are a convenience.
+
+### The live service (for reference)
+
+| | |
+|---|---|
+| REST API | `https://arabic-pipeline.arabic-pipeline.workers.dev` |
+| MCP server | `https://arabic-pipeline-mcp.arabic-pipeline.workers.dev/` |
+| OpenAPI | `https://arabic-pipeline.arabic-pipeline.workers.dev/openapi.json` |
+| Payout wallet | `0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6` (Base, USDC) |
 
 ## Success bar (the "it worked" line)
 
