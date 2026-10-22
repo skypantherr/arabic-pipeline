@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.skypantherr/arabic-pipeline",
+  "title": "Arabic Pipeline API",
+  "description": "Pay-per-call Arabic text, audio and document utilities over x402. USDC on Base, no API key.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/skypantherr/arabic-pipeline",
+    "source": "github"
+  },
+  "websiteUrl": "https://arabic-pipeline.arabic-pipeline.workers.dev/",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://arabic-pipeline-mcp.arabic-pipeline.workers.dev/"
+    }
+  ]
+}

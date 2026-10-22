@@ -63,6 +63,22 @@ export function createApp(cfg: AppConfig, facilitatorClient: FacilitatorClient) 
   app.get("/openapi.json", (c) => c.json(buildOpenApi(cfg)));
 
   // ---- paid routes -------------------------------------------------------
+  /**
+   * Bazaar discovery metadata is deliberately NOT attached to the REST routes.
+   *
+   * The SDK validates any `extensions.bazaar` declaration with Ajv, and Ajv
+   * compiles JSON Schema by calling `new Function`. Cloudflare Workers forbid
+   * dynamic code generation ("Code generation from strings disallowed for this
+   * context"), so that validation throws on every cold isolate. The cost of
+   * the failed compile blows the Workers CPU limit and the first paid request
+   * of each isolate dies mid-flight, which makes the buyer see a hang instead
+   * of a 402. See HANDOFF.md ("Bazaar extension breaks paid routes on
+   * Workers").
+   *
+   * The MCP server still ships Bazaar metadata: that path never runs Ajv, and
+   * it is the discovery surface PayAPI and the Bazaar actually index for MCP
+   * listings.
+   */
   const routeEntries = Object.entries(PRICES).map(([route, price]): [string, RouteConfig] => [
     route,
     {
@@ -74,6 +90,8 @@ export function createApp(cfg: AppConfig, facilitatorClient: FacilitatorClient) 
       },
       description: ROUTE_DESCRIPTIONS[route as keyof typeof ROUTE_DESCRIPTIONS],
       mimeType: "application/json",
+      serviceName: "Arabic Pipeline API",
+      tags: ["arabic", "text", "audio", "documents"],
       unpaidResponseBody: () => ({
         contentType: "application/json",
         body: {

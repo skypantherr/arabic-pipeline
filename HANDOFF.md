@@ -1,16 +1,199 @@
 # HANDOFF
 
 > **Folder renamed** `New folder` → `The402` → **`x402-arabic-pipeline`**.
-> **A fresh session is starting to do the remaining work.** That session should
-> read **`START-HERE.md`** (brief) and **`DEPLOY.md`** (runbook) first. This file
-> is the running log; `START-HERE.md` is the brief.
+> Read **`START-HERE.md`** (brief) and **`DEPLOY.md`** (runbook) first. This
+> file is the running log; `START-HERE.md` is the brief.
 >
-> **State: the service is BUILT and VERIFIED LOCALLY (18/18 tests, typecheck
-> clean, 402 challenge field-by-field verified, Gemini models live-verified, git
-> committed). Remaining: deploy → testnet payment proof → mainnet → publish
-> listings + MCP server → 30-day measurement → fast lane in parallel.**
+> **State (22 Oct 2026, ~07:00): DEPLOYED to mainnet. PayAPI listing
+> SUBMITTED. x402scan: 5/5 resources registered. MCP server live. MCP registry
+> `server.json` validated; publish waits on a GitHub device-code click.
+> The $0.01 payment proof is now defined as "PayAPI's canary settles"; that
+> canary is PayAPI's job and runs on their schedule (review within 24h).**
 
-## Round 6 — setup session (this one): what was actually built and verified
+## Round 7 — deploy session: what actually shipped
+
+**Deployed (Cloudflare account `367298d6e5c8558c19da9abbf1f00eb9`):**
+- REST API — `https://arabic-pipeline.arabic-pipeline.workers.dev`
+  (Worker `arabic-pipeline`, latest version `81abe79f`)
+- MCP server — `https://arabic-pipeline-mcp.arabic-pipeline.workers.dev`
+  (Worker `arabic-pipeline-mcp`, version `9b427e29`)
+- `wrangler login` was **already done** in an earlier session (OAuth token on
+  disk, `workers (write)` scope) → **no browser click was needed to deploy.**
+- Gemini secret set via `wrangler secret put GEMINI_API_KEY` (piped from
+  `.dev.vars`, never echoed). **Key rotation was deferred by the user's
+  explicit instruction** — the current key still works; rotate it yourself
+  later and re-run `npm run secret`.
+
+**Live verification (all green):**
+- `GET /` → 200, `GET /health` → 200, `GET /openapi.json` → 200.
+- `POST /text/normalize` → 402 with a correct challenge: `x402Version 2`,
+  scheme `exact`, network `eip155:8453`, asset
+  `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` (USDC/Base), `payTo`
+  `0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6`, `extra.name` `"USD Coin"`,
+  amount `5000` ($0.005).
+- MCP: `initialize` → 200, `tools/list` → 4 tools (`text_metrics`,
+  `text_normalize`, `audio_transcribe`, `doc_extract`), `tools/call` without
+  payment → a 402 PaymentRequired payload with the same correct accepts entry.
+  MCP tool calls ~180 ms.
+
+**The payout wallet is still empty.** `0x05523af5…B1D2e6` has 0 ETH and 0
+USDC and nonce 0 on Base, Ethereum, Arbitrum, Optimism, Polygon and BSC — it
+has never been used. The x402 facilitator sponsors gas, so a buyer needs only
+USDC, never ETH; the *buyer* here is PayAPI's wallet, not ours, which is why
+their canary is the right proof and why we do not need to fund anything.
+
+**Listings:**
+- PayAPI Market — submitted via `https://payapi.market/list`. Name
+  "Arabic Pipeline API", category Tools, base URL + paid route
+  `…/text/normalize`, price $0.002–$0.03, wallet `0x05523af5…B1D2e6`, MCP
+  endpoint filled in. Confirmation page: "Listing submitted … stays pending
+  and goes live once our paid check passes (we pay one call, cap $0.10)".
+  **Canary receipt/hash: not yet available** — PayAPI reviews within 24h and
+  then pays the exact URL once. The listing is not yet in
+  `payapi.market/agent/list` (only live + settlement-verified listings are
+  listed there). Re-check with `GET https://payapi.market/agent/search?q=arabic`.
+- x402scan — **"Successfully registered 5 of 5 resources"**.
+  Page: `https://www.x402scan.com/server/298e1e2b-3f5c-4890-9791-6d063fd20931`
+  Merchant page: `https://tryponcho.com/m/arabic-pipeline.arabic-pipeline.workers.dev`
+- MCP registry — `server.json` **validates** (`mcp-publisher validate`).
+  Name `io.github.skypantherr/arabic-pipeline`, remote
+  `https://arabic-pipeline-mcp.arabic-pipeline.workers.dev/`. Publish needs
+  GitHub device-code auth (see "Still open").
+- Coinbase x402 Bazaar — **not done, and the cause is a real bug (below).**
+  `POST https://api.cdp.coinbase.com/platform/v2/x402/validate` rejects the
+  REST routes with `has_bazaar_extension: No bazaar extension in top-level
+  extensions object`.
+
+## 🔴 Bazaar extension breaks paid routes on Cloudflare Workers (root cause)
+
+**Symptom:** paid POST routes intermittently *hung* (client timeout, no
+response) instead of returning 402. x402scan reported
+`[404]No valid x402 response found` on 1–2 of 5 endpoints, and the *set of
+failing endpoints changed between runs* — the classic signature of a
+non-deterministic failure, not a routing bug. Measured: 2 hangs / 30 requests.
+
+**Root cause (proved from `wrangler tail`):** attaching `extensions.bazaar` to a
+route makes the SDK validate the declaration with **Ajv**, which compiles JSON
+Schema by calling **`new Function`**. Cloudflare Workers forbid dynamic code
+generation, so every validation throws:
+
+```
+(error) Error compiling schema, function code: const schema1 = scope.schema[1]; ...
+(warn) x402: Route "POST /text/normalize" has an invalid bazaar extension:
+       Schema validation failed: Code generation from strings disallowed for this context
+```
+
+140 such errors in one tail session. The throw happens **inside the request
+path**, so the isolate dies mid-request → the buyer sees a hang and the 402
+never arrives. It is CPU-time-driven: `new Ajv(...)` + `ajv.compile()` of the
+2020-12 meta-schema costs ~50 ms of CPU, over the Workers per-request CPU
+budget.
+
+**Fix (shipped):** the REST routes no longer declare `extensions.bazaar`. The
+SDK's per-request enrichment path (`enrichExtensions` → `enrichDeclaration`)
+does **not** run Ajv, so metadata can still be attached safely *if* it is
+supplied directly rather than through the validating path — but the
+route-config route is exactly what triggers Ajv. The MCP server keeps Bazaar
+metadata (that path never runs Ajv) and works fine.
+
+**Verified after the fix:** 40/40 and 15/15 POSTs returned 402 with **zero
+hangs** (was 2/30). All 7 HTTP methods × 4 routes = 28 probes return
+402/404/204 correctly, no 5xx, no hang. x402scan then reported
+**5 of 5 resources registered**.
+
+**Consequence:** the REST routes have no Bazaar extension, so Coinbase's
+validate endpoint rejects them. Two ways forward, both cheap:
+1. Put the Bazaar extension on the **MCP server only** (already done) and let
+   Bazaar index the MCP tools — MCP is the discovery surface PayAPI and the
+   Bazaar actually index for MCP listings.
+2. If the REST routes must be Bazaar-indexed, the declaration has to reach the
+   402 response **without** passing through `validateBazaarRouteExtensions`.
+   Options: attach `extensions` via `enrichExtensions` only (no Ajv), or add
+   the `unsafe_eval` compatibility flag to the Worker (allows `new Function`)
+   — the latter trades Workers' CSP for Bazaar indexing, so it needs the
+   user's explicit yes. **Not done — needs a decision.**
+
+## Other decisions and why (round 7)
+
+1. **Did not rotate the Gemini key.** The user said explicitly: skip it, the
+   key in `.dev.vars` works, and they will rotate it themselves in their own
+   browser if ever needed. Do not open Google sign-in in the agent browser.
+2. **Did not touch the bounty lane.** User instruction: "Don't do bounty
+   drafting here." The fast lane is left for a later session.
+3. **Payment proof redefined.** The user set the done-criterion: "listing
+   submitted + canary settled + receipt hash". PayAPI pays its own $0.10 canary
+   to the endpoint we listed; that settlement is the receipt. We do not need to
+   hold USDC to prove it. If the canary fails, report the exact error and stop.
+4. **Kept the two Workers separate.** REST and MCP have different protocols
+   and different index surfaces; one Worker would make the MCP URL ugly and
+   the transports awkward. Two free Workers on one account cost nothing.
+
+## Still open — needs the user
+1. **GitHub device-code login for the MCP registry** (one click):
+   `mcp-publisher login github` prints a code; go to
+   `https://github.com/login/device`, enter it, authorize. Then
+   `mcp-publisher publish server.json` in this folder publishes it as
+   `io.github.skypantherr/arabic-pipeline`. **No GitHub password or token is
+   ever shared with the agent** — the CLI does the OAuth handshake itself.
+2. **Push the repo to GitHub** (`skypantherr/arabic-pipeline`). GitHub Desktop
+   is signed in; `git` has credential helper `manager` but no remote is
+   configured yet. The registry entry references the repo URL, so
+   `repository` should point at a real public repo.
+3. **Bazaar decision** (see above): MCP-only, or `unsafe_eval` on the REST
+   Worker.
+4. **Gemini key rotation**, whenever the user gets to it (their own browser).
+
+## Tool notes (new this session)
+- `wrangler tail` output is the fastest way to see Worker-side exceptions; the
+  AJV failure was invisible in HTTP responses and obvious in the tail.
+- Cloudflare Workers: `new Function` is blocked by default → any library that
+  compiles code at runtime (Ajv, some validators) throws "Code generation from
+  strings disallowed for this context".
+- `mcp-publisher` is **not** on npm; it is a GitHub release binary:
+  `https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_windows_amd64.tar.gz`.
+  `mcp-publisher validate server.json` checks the schema against the live
+  registry **without** auth — useful before any login.
+- MCP registry `description` must be **≤ 100 characters** (422 otherwise).
+- `payapi.market/agent/*` only lists **settlement-verified live** listings, so
+  a freshly submitted listing will not appear there.
+- x402scan registration happens **server-side**; the browser tab only shows
+  progress and the result. `Add API (N resources)` is the button that
+  actually registers.
+- MCP spec requires the client to send
+  `Accept: application/json, text/event-stream` on POSTs, otherwise the
+  streamable-HTTP transport answers 406. Not a server bug.
+
+## Verified facts worth not re-researching
+- Facilitator `https://x402.dexter.cash`: free, no account, no fee,
+  `gasSponsored: true`, Base mainnet `eip155:8453` + `exact` +
+  `extra.name "USD Coin"`, `minPaymentAmountAtomic` ≈ 1399 ($0.0014 floor —
+  all four of our prices clear it), `assetTransferMethod: permit2`,
+  extensions include `bazaar` and `sponsored-access`. `/supported` answers in
+  ~170 ms warm, ~700 ms cold.
+- PayAPI Market listing requirements, as their own page states them: durable
+  URL (a `*.workers.dev` URL is fine; trycloudflare/ngrok/sslip/zrok are
+  rejected), a route that already returns 402, `extra.name` = "USD Coin",
+  `payTo` == the wallet on the form, price matching the live 402. They run one
+  canary call capped at $0.10 and badge the listing on the settlement receipt.
+- x402scan discovery spec (`https://www.x402scan.com/discovery/spec`): OpenAPI
+  at `/openapi.json` is canonical; needs `openapi`, `info.title`,
+  `info.x-guidance`, `info.version`, `paths`, per-op `responses.402` +
+  `x-payment-info` (one pricing mode, `currency`), `security` +
+  `components.securitySchemes`. `info.contact.email` is recommended (it is how
+  ownership of the origin is verified). Runtime 402 behaviour is the final
+  source of truth.
+- Coinbase Bazaar discovery (docs.cdp.coinbase.com/x402/seller/get-discovered):
+  validate with `POST https://api.cdp.coinbase.com/platform/v2/x402/validate`
+  (no API key needed); indexing happens after **a successful settled payment
+  through the CDP Facilitator**; the Bazaar extension must be in the 402's
+  top-level `extensions`; discovery metadata must satisfy the content policy.
+- MCP registry remote servers: `server.json` with a `remotes` entry and no
+  `packages` needs no package-ownership verification; the Registry still
+  verifies you control the **namespace** in `name` via your auth method
+  (GitHub → `io.github.<username>/*`). Each remote URL may be used by only one
+  server name.
+
+## Round 6 — setup session: what was actually built and verified
 - **Toolchain verified:** Node v22.23.2, npm 10.9.8, git 2.55.0 (identity
   `SkyPanther / skypantherr@hotmail.com`), GitHub Desktop signed in as
   `skypantherr`, **no `gh` CLI**, **no Python** → TypeScript only.
