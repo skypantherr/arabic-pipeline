@@ -72,6 +72,20 @@ API ("Arabic pipeline") that pays USDC on Base to the user's wallet.
   Daejin needs $5). Its "corridor" sections are now **out of scope**.
 
 ## User instructions to honour
+- **No audience, no referrals, no social-media/audience-building, no surveys, no
+  faucet claims, no play-to-earn, no airdrop farming, no bandwidth/compute
+  sharing.** The user's stated reason (verified by their own testing across many
+  platforms): either the platform doesn't serve people in Palestine, or it
+  doesn't support a payment method they can use, or it takes days/weeks of
+  on-screen time for cents with an unpredictable cash-out. **Never propose a
+  method that needs any of these.**
+- **Open question to resolve:** content bounties on Superteam Earn require a
+  public X post (and the content is promotional copy for a token launch). The
+  user has no social media and no audience, and does not want to "deal with
+  other people". Ask whether the objection is (a) token promotion, (b) posting on
+  X at all, or both — if (b), drop the content-bounty lane entirely and rely on
+  the audience-free lanes (paid-answer board, bug bounty, the x402 API, blind
+  scored competitions).
 - **Never mention local / West Bank / Palestinian-counterparty mechanisms
   again.** Round 3 dropped the money-changer corridor, local cash desks and Gaza
   broker economics entirely. Don't reintroduce them.

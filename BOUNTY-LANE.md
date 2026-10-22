@@ -116,3 +116,29 @@ not of the x402 route. In the x402 market the buyer is a program that searches
 for a capability — no followers, no account age, no reputation, no audience. That
 is why the API lane is the structural answer and the bounty lane is the
 short-term cash. They don't compete; run both.
+
+---
+
+## Audience-free rule (user's hard constraint, added after round 8)
+
+The user tested many micro-earning platforms and found the same wall every
+time: the offers page is empty for people in Palestine, or the payout method
+doesn't work for them, or it takes weeks of on-screen time for cents with an
+unknown cash-out. So: **no audience, no referrals, no social-media
+audience-building, no surveys, no faucet claims, no play-to-earn, no airdrop
+farming, no bandwidth/compute sharing.** Any method that needs one of those is
+out, even if it looks cheap.
+
+**Consequence for this lane:** a Superteam content bounty needs a public X post
+(platform, not audience — but it *is* posting, and the copy is promotional for a
+token). If the user rules that out, this lane is dropped and the audience-free
+fast lanes are: the $0.08 paid-answer board, bug bounty, blind-scored
+competitions, and the x402 API itself.
+
+**Alternative worth checking (audience-free, crypto-paying, small tickets):**
+OSS issue bounties paid in crypto — e.g. **Opire** ("bounties start at $20",
+"paid on PR merge via crypto or Stripe" per third-party sources; **the crypto
+option must be verified directly on opire.dev**), plus Code4rena (USDC, contests)
+and Bountycaster (USDC, peer-to-peer, needs a Farcaster account). Verification
+task, not a promise.
+
