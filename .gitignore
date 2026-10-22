@@ -16,4 +16,5 @@ mcp-publisher.exe
 mcp-publisher.tar.gz
 mcp-login.txt
 logs-tail*.txt
+logs-*.txt
 

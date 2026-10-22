@@ -371,3 +371,14 @@ POST https://arabic-pipeline.arabic-pipeline.workers.dev/text/metrics - Ok @ 10/
 POST https://arabic-pipeline.arabic-pipeline.workers.dev/text/normalize - Ok @ 10/22/2026, 7:32:09 AM
 POST https://arabic-pipeline.arabic-pipeline.workers.dev/audio/transcribe - Ok @ 10/22/2026, 7:32:09 AM
 POST https://arabic-pipeline.arabic-pipeline.workers.dev/doc/extract - Ok @ 10/22/2026, 7:32:09 AM
+node.exe : [33mΓû▓ [43;33m[[43;30mWARNING[43;33m][0m [1mTail connection lost. Reconnecting (attempt 1 of 5) in 
+1s...[0m
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([33mΓû▓ [43;3...5) in 1s...[0m:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+
+Reconnected to arabic-pipeline.
