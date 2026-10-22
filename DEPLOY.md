@@ -117,32 +117,56 @@ A testnet rehearsal is optional and not required.
    - `POST /text/normalize` with a real payment → 200 + a BaseScan receipt
      landing in `0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6`.
 
-### ⚠ Two things that break paid routes on Workers (both fixed here)
+### ⚠ Two things that break paid routes on Workers (both fixed here — and note the
+fixes were *revised* on 22 Oct 2026, after the first attempt did not work)
 
-Do not reintroduce either. Both produced the *same* symptom — paid requests
-hanging instead of returning 402 — so read the fix before changing
-`src/app.ts` or `src/index.ts`.
+Do not reintroduce either. Both produced the same symptom — paid requests
+hanging instead of returning 402 — so read this before changing `src/app.ts`,
+`src/lib/facilitator.ts` or `src/mcp.ts`.
 
-1. **Never let the SDK validate a Bazaar declaration.** Declaring
-   `extensions.bazaar` on a route makes the SDK validate it with Ajv, which
-   compiles JSON Schema via `new Function` — forbidden on Workers. The failure
-   happens inside the request path, so the isolate dies mid-request. The fix
-   in `src/app.ts`: build the routes *without* `extensions`, register
-   `bazaarResourceServerExtension` on the resource server ourselves, and only
-   then attach the declaration to the route configs. There is no
-   `unsafe_eval` compatibility flag to fall back on — the API rejects it.
-2. **Do not let a paid request wait on a cold facilitator handshake.** The
-   middleware awaits `initialize()` (a `/supported` fetch) before answering
-   the first paid request of an isolate, and the SDK retries a throttled
-   handshake with exponential backoff — ~7s of dead time for the buyer.
-   `src/lib/facilitator.ts` caches the handshake at the edge (15 min, keyed on
-   our own origin because the Cache API only stores same-zone entries).
+1. **Never attach a Bazaar declaration to a route.** Declaring
+   `extensions.bazaar` makes the SDK validate it with Ajv, and Ajv compiles
+   JSON Schema via `new Function` — forbidden on Workers. The failure happens
+   inside the request path, so the isolate dies mid-request and the buyer sees
+   a hang instead of a 402.
+   - First attempt (did NOT work): build the routes without `extensions`,
+     register `bazaarResourceServerExtension` on the resource server yourself,
+     then attach the declaration to the route configs afterwards. That still
+     hung: the per-request enrichment path validates with Ajv too, not just
+     the setup path.
+   - What works now: the Bazaar extension is not used at all in the paid path.
+     The metadata is published in the free routes instead — `GET /` carries
+     `discovery.bazaar`, `GET /openapi.json` carries per-operation `x-bazaar` —
+     and the service is separately registered with Coinbase's Bazaar index. A
+     working 402 matters more than a live discovery declaration. If Bazaar later
+     de-lists us for a missing live declaration: re-register, or move the paid
+     service to a runtime that allows codegen (a Node VPS).
+2. **Never let a paid request wait on a facilitator handshake or the edge
+   cache.** The middleware awaits `initialize()` (a `/supported` fetch) before
+   answering the first paid request of an isolate, and the SDK retries a
+   throttled handshake with exponential backoff.
+   - First attempt (did NOT work): cache `/supported` at the edge with
+     `caches.default` for 15 minutes. That is fine in local workerd but HANGS
+     on the edge.
+   - What works now: the facilitator's `/supported` document is bundled
+     (`src/lib/facilitator-supported.json`, 44 kinds, refreshed by
+     `node scripts/refresh-facilitator-snapshot.mjs`) and `getSupported()`
+     returns it with no network and no cache. The facilitator is contacted only
+     for `/verify` and `/settle`, i.e. only when a real payment is presented.
+
+**Guard against both regressing:** `npm run smoke:prod` (or `npm run smoke`
+against `wrangler dev`) asserts the paid route returns a correct 402 — right
+network, asset, `extra.name`, amount, payTo — in under 2 seconds. The vitest
+suite runs in Node, where `new Function` and the Cache API behave differently,
+so it cannot see either failure. Run the smoke test after every deploy and
+after any change to the paid path.
 
 **Measurement trap:** this sandbox reaches the internet through a
 TLS-intercepting proxy, so a few percent of local `fetch` calls hang for
 reasons that have nothing to do with the Worker. Confirm any suspected Worker
-hang **from inside Cloudflare** (probe the production URL from a throwaway
-Worker) before changing Worker code.
+hang from inside Cloudflare (probe the production URL, or from a throwaway
+Worker) before changing Worker code. The 22 Oct 2026 fix was confirmed against
+the production URL from a browser, not from a local fetch.
 
 ## Phase 3 — publish the listing (this is what makes agents find you)
 

@@ -13,6 +13,8 @@
     "secret": "wrangler secret put GEMINI_API_KEY",
     "test": "vitest run",
     "test:watch": "vitest",
+    "smoke": "node scripts/smoke-paid-route.mjs",
+    "smoke:prod": "node scripts/smoke-paid-route.mjs https://arabic-pipeline.arabic-pipeline.workers.dev",
     "typecheck": "tsc --noEmit",
     "login": "wrangler login"
   },

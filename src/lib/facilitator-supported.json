@@ -1,0 +1,598 @@
+{
+  "_note": "Snapshot of the facilitator's /supported document. Bundled so the 402 path NEVER waits on a network call. Refresh with: node scripts/refresh-facilitator-snapshot.mjs",
+  "_fetchedAt": "2026-10-22T05:44:01.151Z",
+  "_facilitator": "https://x402.dexter.cash",
+  "kinds": [
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+      "extra": {
+        "feePayer": "DeXterR2kQm8AvRHnNPatWkE46TfAcMeBDjb6FySoAb8",
+        "decimals": 6,
+        "features": {
+          "gasSponsored": true,
+          "smartWalletSupported": true
+        },
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "1157",
+        "minPaymentAmountUsd": 0.0011569800000000002
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "tab",
+      "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+      "extra": {
+        "feePayer": "DeXterR2kQm8AvRHnNPatWkE46TfAcMeBDjb6FySoAb8",
+        "voucherHeader": "x-tab-voucher",
+        "settleUrl": "/tab/settle",
+        "registrationEncoding": "base64(188-byte sessionRegisterMessage)",
+        "docs": "https://dexter.cash/tab",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "1157",
+        "minPaymentAmountUsd": 0.0011569800000000002
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
+      "extra": {
+        "feePayer": "DeXterR2kQm8AvRHnNPatWkE46TfAcMeBDjb6FySoAb8",
+        "decimals": 6,
+        "features": {
+          "gasSponsored": true,
+          "smartWalletSupported": true
+        },
+        "paymentFloorAvailable": false,
+        "minPaymentAmountAtomic": null,
+        "minPaymentAmountUsd": null
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:8453",
+      "extra": {
+        "name": "USD Coin",
+        "version": "2",
+        "features": {
+          "gasSponsored": true,
+          "smartWalletSupported": true
+        },
+        "assetTransferMethod": "permit2",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "1385",
+        "minPaymentAmountUsd": 0.0013848606448934402
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:8453",
+      "extra": {
+        "facilitatorAddress": "0x402Feee072D655B85e08f1751AF9ddbCd249521f",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "1385",
+        "minPaymentAmountUsd": 0.0013848606448934402
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "batch-settlement",
+      "network": "eip155:8453",
+      "extra": {
+        "receiverAuthorizer": "0x88559c293Aa9A27707e66CE69F0b40eb8E9aecfB",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "1385",
+        "minPaymentAmountUsd": 0.0013848606448934402
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:84532",
+      "extra": {
+        "name": "USDC",
+        "version": "2",
+        "features": {
+          "gasSponsored": true,
+          "smartWalletSupported": true
+        },
+        "assetTransferMethod": "permit2",
+        "paymentFloorAvailable": false,
+        "minPaymentAmountAtomic": null,
+        "minPaymentAmountUsd": null
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:84532",
+      "extra": {
+        "facilitatorAddress": "0x402Feee072D655B85e08f1751AF9ddbCd249521f",
+        "paymentFloorAvailable": false,
+        "minPaymentAmountAtomic": null,
+        "minPaymentAmountUsd": null
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:137",
+      "extra": {
+        "name": "USD Coin",
+        "version": "2",
+        "features": {
+          "gasSponsored": true,
+          "smartWalletSupported": true
+        },
+        "assetTransferMethod": "permit2",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "399",
+        "minPaymentAmountUsd": 0.00039862354478113575
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:137",
+      "extra": {
+        "facilitatorAddress": "0x402Feee072D655B85e08f1751AF9ddbCd249521f",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "399",
+        "minPaymentAmountUsd": 0.00039862354478113575
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "batch-settlement",
+      "network": "eip155:137",
+      "extra": {
+        "receiverAuthorizer": "0x88559c293Aa9A27707e66CE69F0b40eb8E9aecfB",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "399",
+        "minPaymentAmountUsd": 0.00039862354478113575
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:42161",
+      "extra": {
+        "name": "USD Coin",
+        "version": "2",
+        "features": {
+          "gasSponsored": true,
+          "smartWalletSupported": true
+        },
+        "assetTransferMethod": "permit2",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "5533",
+        "minPaymentAmountUsd": 0.00553272686216448
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:42161",
+      "extra": {
+        "facilitatorAddress": "0x402Feee072D655B85e08f1751AF9ddbCd249521f",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "5533",
+        "minPaymentAmountUsd": 0.00553272686216448
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "batch-settlement",
+      "network": "eip155:42161",
+      "extra": {
+        "receiverAuthorizer": "0x88559c293Aa9A27707e66CE69F0b40eb8E9aecfB",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "5533",
+        "minPaymentAmountUsd": 0.00553272686216448
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:10",
+      "extra": {
+        "name": "USD Coin",
+        "version": "2",
+        "features": {
+          "gasSponsored": true,
+          "smartWalletSupported": true
+        },
+        "assetTransferMethod": "permit2",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "304",
+        "minPaymentAmountUsd": 0.00030349236166064646
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:43114",
+      "extra": {
+        "name": "USD Coin",
+        "version": "2",
+        "features": {
+          "gasSponsored": true,
+          "smartWalletSupported": true
+        },
+        "assetTransferMethod": "permit2",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "1617",
+        "minPaymentAmountUsd": 0.0016165536702432153
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:56",
+      "extra": {
+        "name": "USD Coin",
+        "version": "2",
+        "features": {
+          "gasSponsored": true,
+          "smartWalletSupported": true
+        },
+        "assetTransferMethod": "permit2",
+        "decimals": 18,
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "3560111433450000",
+        "minPaymentAmountUsd": 0.00356011143345
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:1187947933",
+      "extra": {
+        "name": "Bridged USDC (SKALE Bridge)",
+        "version": "2",
+        "features": {
+          "gasSponsored": true
+        },
+        "assetTransferMethod": "permit2",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "0",
+        "minPaymentAmountUsd": 0
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:324705682",
+      "extra": {
+        "name": "Bridged USDC (SKALE Bridge)",
+        "version": "2",
+        "features": {
+          "gasSponsored": true
+        },
+        "assetTransferMethod": "permit2",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "0",
+        "minPaymentAmountUsd": 0
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:480",
+      "extra": {
+        "name": "USDC",
+        "version": "2",
+        "features": {
+          "gasSponsored": true,
+          "smartWalletSupported": true
+        },
+        "assetTransferMethod": "permit2",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "414",
+        "minPaymentAmountUsd": 0.00041371406208
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:480",
+      "extra": {
+        "facilitatorAddress": "0x402Feee072D655B85e08f1751AF9ddbCd249521f",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "414",
+        "minPaymentAmountUsd": 0.00041371406208
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "batch-settlement",
+      "network": "eip155:480",
+      "extra": {
+        "receiverAuthorizer": "0x88559c293Aa9A27707e66CE69F0b40eb8E9aecfB",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "414",
+        "minPaymentAmountUsd": 0.00041371406208
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:143",
+      "extra": {
+        "name": "USDC",
+        "version": "2",
+        "features": {
+          "gasSponsored": true,
+          "smartWalletSupported": true
+        },
+        "assetTransferMethod": "permit2",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "219",
+        "minPaymentAmountUsd": 0.00021857121
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:143",
+      "extra": {
+        "facilitatorAddress": "0x402Feee072D655B85e08f1751AF9ddbCd249521f",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "219",
+        "minPaymentAmountUsd": 0.00021857121
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "batch-settlement",
+      "network": "eip155:143",
+      "extra": {
+        "receiverAuthorizer": "0x88559c293Aa9A27707e66CE69F0b40eb8E9aecfB",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "219",
+        "minPaymentAmountUsd": 0.00021857121
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:4663",
+      "extra": {
+        "name": "Global Dollar",
+        "version": "1",
+        "features": {
+          "gasSponsored": true,
+          "smartWalletSupported": true
+        },
+        "assetTransferMethod": "permit2",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "5533",
+        "minPaymentAmountUsd": 0.00553272686216448
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:4663",
+      "extra": {
+        "facilitatorAddress": "0x402Feee072D655B85e08f1751AF9ddbCd249521f",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "5533",
+        "minPaymentAmountUsd": 0.00553272686216448
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "batch-settlement",
+      "network": "eip155:4663",
+      "extra": {
+        "receiverAuthorizer": "0x88559c293Aa9A27707e66CE69F0b40eb8E9aecfB",
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "5533",
+        "minPaymentAmountUsd": 0.00553272686216448
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "bridge",
+      "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+      "extra": {
+        "bridgeDestinations": [
+          "eip155:8453"
+        ],
+        "bridgeFeePercent": 0.1,
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "1157",
+        "minPaymentAmountUsd": 0.0011569800000000002
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "bridge",
+      "network": "eip155:8453",
+      "extra": {
+        "bridgeDestinations": [
+          "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"
+        ],
+        "bridgeFeePercent": 0.1,
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "1385",
+        "minPaymentAmountUsd": 0.0013848606448934402
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "solana",
+      "extra": {
+        "feePayer": "DeXterR2kQm8AvRHnNPatWkE46TfAcMeBDjb6FySoAb8",
+        "decimals": 6,
+        "features": {
+          "gasSponsored": true,
+          "smartWalletSupported": true
+        },
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "1157",
+        "minPaymentAmountUsd": 0.0011569800000000002
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "solana-devnet",
+      "extra": {
+        "feePayer": "DeXterR2kQm8AvRHnNPatWkE46TfAcMeBDjb6FySoAb8",
+        "decimals": 6,
+        "features": {
+          "gasSponsored": true,
+          "smartWalletSupported": true
+        },
+        "paymentFloorAvailable": false,
+        "minPaymentAmountAtomic": null,
+        "minPaymentAmountUsd": null
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "base",
+      "extra": {
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "1385",
+        "minPaymentAmountUsd": 0.0013848606448934402
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "base-sepolia",
+      "extra": {
+        "paymentFloorAvailable": false,
+        "minPaymentAmountAtomic": null,
+        "minPaymentAmountUsd": null
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "polygon",
+      "extra": {
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "399",
+        "minPaymentAmountUsd": 0.00039862354478113575
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "arbitrum",
+      "extra": {
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "5533",
+        "minPaymentAmountUsd": 0.00553272686216448
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "optimism",
+      "extra": {
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "304",
+        "minPaymentAmountUsd": 0.00030349236166064646
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "avalanche",
+      "extra": {
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "1617",
+        "minPaymentAmountUsd": 0.0016165536702432153
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "bsc",
+      "extra": {
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "3560111433450000",
+        "minPaymentAmountUsd": 0.00356011143345
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "skale-base",
+      "extra": {
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "0",
+        "minPaymentAmountUsd": 0
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "skale-base-sepolia",
+      "extra": {
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "0",
+        "minPaymentAmountUsd": 0
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "world",
+      "extra": {
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "414",
+        "minPaymentAmountUsd": 0.00041371406208
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "monad",
+      "extra": {
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "219",
+        "minPaymentAmountUsd": 0.00021857121
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "robinhood",
+      "extra": {
+        "paymentFloorAvailable": true,
+        "minPaymentAmountAtomic": "5533",
+        "minPaymentAmountUsd": 0.00553272686216448
+      }
+    }
+  ],
+  "extensions": [
+    "bazaar",
+    "sponsored-access",
+    "eip2612GasSponsoring",
+    "erc20ApprovalGasSponsoring"
+  ],
+  "signers": {
+    "solana:*": [
+      "DeXterR2kQm8AvRHnNPatWkE46TfAcMeBDjb6FySoAb8"
+    ],
+    "eip155:*": [
+      "0x402Feee072D655B85e08f1751AF9ddbCd249521f"
+    ],
+    "*": [
+      "DeXterR2kQm8AvRHnNPatWkE46TfAcMeBDjb6FySoAb8",
+      "0x402Feee072D655B85e08f1751AF9ddbCd249521f"
+    ]
+  }
+}

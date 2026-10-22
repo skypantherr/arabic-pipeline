@@ -4,11 +4,70 @@
 > Read **`START-HERE.md`** (brief) and **`DEPLOY.md`** (runbook) first. This
 > file is the running log; `START-HERE.md` is the brief.
 >
-> **State (22 Oct 2026, ~07:00): DEPLOYED to mainnet. PayAPI listing
-> SUBMITTED. x402scan: 5/5 resources registered. MCP server live. MCP registry
-> `server.json` validated; publish waits on a GitHub device-code click.
-> The $0.01 payment proof is now defined as "PayAPI's canary settles"; that
-> canary is PayAPI's job and runs on their schedule (review within 24h).**
+> **State (22 Oct 2026, after this session): DEPLOYED to mainnet and the paid
+> path is FIXED — both workers (REST + MCP) answer a paid request with a
+> correct 402 in <400ms. PayAPI listing submitted, their $0.10 canary pending
+> (that canary is the payment proof). Remaining: the canary, the 30-day
+> scoreboard, the fast lane, the Gemini key rotation, and the open question
+> about X/token-promo content bounties.**
+
+## Round 9 (this session) — the paid path was broken on the edge; found, fixed, guarded
+
+**What was wrong.** The deployed service answered free routes in ~70ms but a
+paid route (POST /text/metrics) **never returned** — the request hung. A paid
+route that hangs is worse than one that 500s: the buyer sees a dead service and
+every indexer writes it off.
+
+**Root cause #1 — the Bazaar extension.** `@x402/extensions/bazaar` validates a
+route's `extensions.bazaar` declaration with Ajv (`ajv.compile(schema)`), and Ajv
+compiles schemas by generating code from a string (`new Function`) — which
+Cloudflare Workers forbid ("Code generation from strings disallowed for this
+context"). The earlier session's workaround (declare the extension *after*
+middleware setup) did **not** work: the per-request enrichment path still hits
+the Ajv validation. Measured locally: Bazaar attached → paid route hangs; Bazaar
+removed → **402 in 116ms**.
+
+**Root cause #2 — the Workers Cache API.** The facilitator client's
+`getSupported()` was wrapped in an edge cache (`caches.default`). In local
+workerd that was fine; **on the edge the paid path hung** (the middleware
+awaits `httpServer.initialize()` → `getSupported()` → the cache call). Fix: the
+facilitator's `/supported` document is now **bundled**
+(`src/lib/facilitator-supported.json`, 44 kinds, refreshed by
+`scripts/refresh-facilitator-snapshot.mjs`) and `getSupported()` returns it with
+**no network and no cache**.
+
+**Corrections to the earlier session's conclusions**
+- "The stall is the facilitator's rate limiting" → wrong; the facilitator was
+  never the problem. It was Ajv (Bazaar), then the Cache API.
+- "The per-request path does NOT use Ajv" → wrong; it does.
+- Consequence: Bazaar discovery metadata is no longer attached to the paid
+  routes. It is published in the **free** routes instead (`/` → `discovery.bazaar`,
+  `/openapi.json` → per-operation `x-bazaar`), and the service is separately
+  registered with Coinbase's Bazaar index. A working 402 matters more than a live
+  declaration. If Bazaar later de-lists us for a missing live declaration, the
+  options are: re-register, or move the paid service to a runtime that allows
+  codegen (a Node VPS).
+
+**Why the test suite could not see any of this:** vitest runs in **Node**, where
+`new Function` and the Cache API behave differently. The failure only exists in
+the Workers runtime. Hence a new guard that runs against a real Worker:
+`npm run smoke:prod` (or `npm run smoke` against `wrangler dev`) asserts the
+paid route returns a correct 402 in <2s. **Run it after any change to the paid
+path.** The vitest suite (18 tests) covers pure logic and the challenge *shape*;
+only the smoke test covers the runtime.
+
+**Verified after the fix**
+- REST: `POST /text/normalize` → 402 in 75–118ms; challenge = `x402Version 2`,
+  `scheme exact`, `network eip155:8453`, `asset 0x833589fCD…2913` (USDC/Base),
+  `extra.name "USD Coin"`, `amount 5000` ($0.005), `payTo 0x05523af5…D2e6`.
+- Facilitator round-trip: a deliberately invalid `PAYMENT-SIGNATURE` returns 402
+  in ~10ms (so /verify is reachable and fails fast rather than hanging).
+- MCP: `initialize` 80ms, `tools/list` 79ms, `tools/call` returns the x402
+  challenge in 88–162ms.
+- New free route `GET /diag` reports the bundled snapshot and times a live
+  facilitator handshake from the edge.
+- Wallet balance at time of writing: **0 USDC / 0 ETH** → PayAPI's $0.10 canary
+  has not fired yet (their paid check is pending on their side).
 
 ## Round 7 — deploy session: what actually shipped
 

@@ -3,10 +3,10 @@ import { paymentMiddleware, x402ResourceServer } from "@x402/hono";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
 import type { FacilitatorClient, RouteConfig, RoutesConfig } from "@x402/core/server";
 import {
-  bazaarResourceServerExtension,
   declareDiscoveryExtension,
 } from "@x402/extensions/bazaar";
 import { PRICES, ROUTE_DESCRIPTIONS, usd, type AppConfig } from "./config";
+import { CachedFacilitatorClient } from "./lib/facilitator";
 import { normalizeArabic, textMetrics, type NormalizeMode } from "./lib/arabic";
 import { GeminiError, extractDocument, transcribeAudio } from "./lib/gemini";
 import { buildOpenApi } from "./lib/openapi";
@@ -164,8 +164,7 @@ export function createApp(cfg: AppConfig, facilitatorClient: FacilitatorClient) 
       network: cfg.network,
       payTo: cfg.payTo,
       asset: "USDC",
-      price_model: "per call, fixed",
-      endpoints: Object.entries(PRICES).map(([route, price]) => ({
+      price_model: "per call, fixed",      endpoints: Object.entries(PRICES).map(([route, price]) => ({
         route,
         price_usd: price,
         description: ROUTE_DESCRIPTIONS[route as keyof typeof ROUTE_DESCRIPTIONS],
@@ -175,6 +174,7 @@ export function createApp(cfg: AppConfig, facilitatorClient: FacilitatorClient) 
         payapi_market: "https://payapi.market/mcp",
         x402scan: "https://www.x402scan.com/resources/register",
         mcp_registry: "https://registry.modelcontextprotocol.io",
+        bazaar: BAZAAR_DISCOVERY,
       },
       how_it_works:
         "Send a request with no payment header -> receive 402 Payment Required -> sign a payment for one of the accepts entries -> retry with the PAYMENT-SIGNATURE header.",
@@ -183,7 +183,38 @@ export function createApp(cfg: AppConfig, facilitatorClient: FacilitatorClient) 
 
   app.get("/health", (c) => c.json({ ok: true, network: cfg.network }));
 
-  app.get("/openapi.json", (c) => c.json(buildOpenApi(cfg)));
+  /**
+   * Diagnostics: what the edge sees.
+   *
+   * `liveHandshake` times a real call to the facilitator's /supported from
+   * this isolate — the thing that used to stall the 402 path. The bundled
+   * snapshot is what the 402 path actually uses, so this route is the way to
+   * tell "the facilitator is slow from here" apart from "something else is
+   * hanging".
+   */
+  app.get("/diag", async (c) => {
+    const t0 = Date.now();
+    let live: Record<string, unknown>;
+    try {
+      const res = await fetch(`${cfg.facilitatorUrl.replace(/\/$/, "")}/supported`, {
+        signal: AbortSignal.timeout(6000),
+      });
+      const doc = (await res.json()) as { kinds?: unknown[] };
+      live = { ok: res.ok, ms: Date.now() - t0, kinds: doc.kinds?.length ?? null };
+    } catch (err) {
+      live = { ok: false, ms: Date.now() - t0, error: String(err).slice(0, 140) };
+    }
+    return c.json({
+      network: cfg.network,
+      payTo: cfg.payTo,
+      facilitator: cfg.facilitatorUrl,
+      bundledSnapshot: CachedFacilitatorClient.snapshotInfo,
+      liveHandshake: live,
+      routes: Object.keys(PRICES),
+    });
+  });
+
+  app.get("/openapi.json", (c) => c.json(buildOpenApi(cfg, BAZAAR_DISCOVERY)));
 
   // ---- paid routes -------------------------------------------------------
   /**
@@ -243,21 +274,33 @@ export function createApp(cfg: AppConfig, facilitatorClient: FacilitatorClient) 
     new ExactEvmScheme(),
   );
 
-  // (2) Register bazaar ourselves: the SDK would only do this on its AJV
-  // path, which is exactly the path we are avoiding.
-  server.registerExtension(bazaarResourceServerExtension);
+  // ---------------------------------------------------------------------------
+  // BAZAAR DISCOVERY METADATA — INFORMATIONAL ONLY, NEVER ON THE PAID PATH
+  // ---------------------------------------------------------------------------
+  // Why this is not attached to the route configs:
+  //
+  // `@x402/extensions/bazaar` validates a route's `extensions.bazaar`
+  // declaration with Ajv (`ajv.compile(schema)`), and Ajv compiles a schema by
+  // generating a function from a string — `new Function`. Cloudflare Workers
+  // forbid code generation from strings ("Code generation from strings
+  // disallowed for this context"), so the request dies before a response can be
+  // written and the buyer sees a hang instead of a 402.
+  //
+  // Measured, on 22 Oct 2026, against this deployment:
+  //   - Bazaar extension attached  -> POST /text/metrics never returns (hang),
+  //                                    while GET /health answers in ~70ms
+  //   - Bazaar extension removed   -> POST /text/metrics returns 402 in ~116ms
+  // Reproduced identically with `wrangler dev` locally and on the edge.
+  //
+  // So: the metadata is published in the FREE routes (`/` and `/openapi.json`)
+  // and the service is separately registered with Coinbase's Bazaar index, but
+  // the paid path must never touch the Bazaar code. A working 402 matters more
+  // than a live discovery declaration.
+  const BAZAAR_DISCOVERY: Record<string, unknown> = Object.fromEntries(
+    Object.keys(PRICES).map((route) => [route, (bazaarFor(route) as { bazaar?: unknown }).bazaar]),
+  );
 
-  // The middleware captures the routes object; `checkIfBazaarNeeded` runs on
-  // it synchronously here, while no route declares bazaar yet.
   const middleware = paymentMiddleware(routes, server);
-
-  // (3) Now attach the discovery declaration to each route config. The
-  // per-request path reads it from here and enriches it without Ajv.
-  // `declareDiscoveryExtension` already returns `{ bazaar: {...} }`, which is
-  // exactly the shape `extensions` expects.
-  for (const [route, config] of Object.entries(routes) as [string, RouteConfig][]) {
-    config.extensions = bazaarFor(route);
-  }
 
   app.use(middleware);
 

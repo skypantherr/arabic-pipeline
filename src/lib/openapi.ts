@@ -69,6 +69,7 @@ function op(
   route: PricedRoute,
   body: { schema: object; required: string[]; description: string },
   query?: Record<string, { schema: object; required: string[]; description: string }>,
+  bazaar?: unknown,
 ) {
   const price = PRICES[route];
   const [method, path] = route.split(" ");
@@ -110,11 +111,19 @@ function op(
         price: { mode: "fixed", currency: "USD", amount: price.toFixed(6) },
         protocols: [{ x402: {} }],
       },
+      // Bazaar discovery metadata, published here rather than in the route's
+      // `extensions` (see src/app.ts: the Bazaar extension's Ajv validation
+      // uses `new Function`, which Cloudflare Workers forbid, and it hangs the
+      // paid path).
+      ...(bazaar ? { "x-bazaar": bazaar } : {}),
     },
   };
 }
 
-export function buildOpenApi(cfg: AppConfig): Record<string, unknown> {
+export function buildOpenApi(
+  cfg: AppConfig,
+  bazaarDiscovery?: Record<string, unknown>,
+): Record<string, unknown> {
   const ops = [
     op("GET /text/metrics", BODIES.text, {
       text: {
@@ -122,11 +131,11 @@ export function buildOpenApi(cfg: AppConfig): Record<string, unknown> {
         description: "The text to measure. URL-encoded.",
         schema: { type: "string" },
       },
-    }),
-    op("POST /text/metrics", BODIES.text),
-    op("POST /text/normalize", BODIES.text),
-    op("POST /audio/transcribe", BODIES.audio),
-    op("POST /doc/extract", BODIES.document),
+    }, bazaarDiscovery?.["GET /text/metrics"]),
+    op("POST /text/metrics", BODIES.text, undefined, bazaarDiscovery?.["POST /text/metrics"]),
+    op("POST /text/normalize", BODIES.text, undefined, bazaarDiscovery?.["POST /text/normalize"]),
+    op("POST /audio/transcribe", BODIES.audio, undefined, bazaarDiscovery?.["POST /audio/transcribe"]),
+    op("POST /doc/extract", BODIES.document, undefined, bazaarDiscovery?.["POST /doc/extract"]),
   ];
 
   const paths: Record<string, Record<string, unknown>> = {};

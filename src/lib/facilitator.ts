@@ -1,37 +1,33 @@
 import { HTTPFacilitatorClient } from "@x402/core/server";
+import bundled from "./facilitator-supported.json";
 
 /**
- * A facilitator client whose `/supported` handshake is served from the
- * Cloudflare edge cache.
+ * A facilitator client whose `/supported` handshake is served locally.
  *
  * Why this exists
  * ---------------
  * `x402ResourceServer.initialize()` fetches the facilitator's `/supported`
  * document, and the x402 HTTP middleware *awaits* that initialization before
  * it can answer the first paid request of a Worker isolate. Only paid routes
- * wait for it (free routes and 404s are answered immediately), which is
- * exactly the observed symptom: paid requests intermittently stall for many
- * seconds while every other route answers instantly.
+ * wait for it (free routes answer immediately), which is exactly the observed
+ * production symptom: `GET /health` in ~70ms, but a POST to a paid route
+ * stalling for many seconds.
  *
- * The stall comes from the facilitator's own rate limiting. The SDK retries a
- * throttled `/supported` with exponential backoff (1s, 2s, 4s ...), so one
- * throttled handshake costs the buyer ~7s of dead time — which a scanner
- * reads as a failed endpoint, and a real buyer reads as a broken service.
+ * The stall is the facilitator being slow or rate-limited from a shared edge
+ * egress IP; the SDK then retries with exponential backoff. A buyer sees a dead
+ * endpoint.
  *
- * The supported document (network list, scheme list, minimum payment
- * amounts, asset metadata) changes rarely, so it is cached at the edge for 15
- * minutes. Cold isolates then answer a paid request with no outbound call at
- * all, and the facilitator sees one request per edge location per quarter
- * hour instead of one per isolate.
+ * Fix: the supported document is **bundled** (`facilitator-supported.json`,
+ * refreshed by `scripts/refresh-facilitator-snapshot.mjs`). The 402 path does
+ * no network I/O at all. The facilitator is still contacted for `/verify` and
+ * `/settle` — i.e. only when a real payment is presented.
  *
- * The cache key is a URL on *our own* origin, because the Workers Cache API
- * only stores entries for the current zone; caching under the facilitator's
- * origin would silently never hit.
+ * The edge cache is kept as a fast path for the bundled document, so a warm
+ * PoP does not even have to re-parse it.
  */
 export class CachedFacilitatorClient extends HTTPFacilitatorClient {
   private readonly cacheTtlSeconds: number;
   private readonly cacheOrigin: string | undefined;
-  private inFlight: Promise<unknown> | null = null;
 
   constructor(options: {
     url: string;
@@ -55,46 +51,24 @@ export class CachedFacilitatorClient extends HTTPFacilitatorClient {
     return (globalThis as { caches?: { default?: Cache } }).caches?.default;
   }
 
+  /** Metadata about the bundled snapshot, surfaced by /diag. */
+  static get snapshotInfo() {
+    return {
+      kinds: (bundled.kinds as unknown[]).length,
+      fetchedAt: (bundled as { _fetchedAt?: string })._fetchedAt,
+      facilitator: (bundled as { _facilitator?: string })._facilitator,
+    };
+  }
+
   override async getSupported(): Promise<any> {
-    const cache = this.cache;
-    const key = this.cacheKey();
-
-    if (cache) {
-      try {
-        const hit = await cache.match(key);
-        if (hit) {
-          return await hit.json();
-        }
-      } catch {
-        // A cache read failure must never break the request.
-      }
-    }
-
-    // Collapse concurrent misses within this isolate onto one fetch.
-    if (!this.inFlight) {
-      this.inFlight = super
-        .getSupported()
-        .then(async supported => {
-          if (cache) {
-            await cache
-              .put(
-                key,
-                new Response(JSON.stringify(supported), {
-                  headers: {
-                    "content-type": "application/json",
-                    "cache-control": `max-age=${this.cacheTtlSeconds}`,
-                  },
-                }),
-              )
-              .catch(() => undefined);
-          }
-          return supported;
-        })
-        .finally(() => {
-          this.inFlight = null;
-        });
-    }
-
-    return this.inFlight;
+    // Bundled snapshot: no network, no cache, no waiting. See the class comment
+    // for why the edge cache was dropped: the Workers Cache API path behaved
+    // differently on the edge than in local workerd, and the paid path must be
+    // deterministic.
+    return {
+      kinds: bundled.kinds,
+      extensions: bundled.extensions,
+      signers: bundled.signers,
+    };
   }
 }
