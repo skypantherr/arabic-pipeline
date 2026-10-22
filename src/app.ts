@@ -2,6 +2,10 @@ import { Hono } from "hono";
 import { paymentMiddleware, x402ResourceServer } from "@x402/hono";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
 import type { FacilitatorClient, RouteConfig, RoutesConfig } from "@x402/core/server";
+import {
+  bazaarResourceServerExtension,
+  declareDiscoveryExtension,
+} from "@x402/extensions/bazaar";
 import { PRICES, ROUTE_DESCRIPTIONS, usd, type AppConfig } from "./config";
 import { normalizeArabic, textMetrics, type NormalizeMode } from "./lib/arabic";
 import { GeminiError, extractDocument, transcribeAudio } from "./lib/gemini";
@@ -15,6 +19,125 @@ const MAX_DOC_BYTES = 12 * 1024 * 1024; // 12 MB base64 payload ceiling
  * `facilitatorClient` is injected so tests can drive the 402 challenge without
  * touching the network, and so the Worker can lazily build a real client.
  */
+/**
+ * Bazaar discovery declaration for one route.
+ *
+ * `input` is the example the Bazaar sends back when it probes the route, so
+ * it must satisfy `inputSchema`.
+ */
+function bazaarFor(route: string): Record<string, unknown> {
+  const textSchema = {
+    type: "object",
+    properties: { text: { type: "string", description: "The text to measure." } },
+    required: ["text"],
+  };
+  if (route.startsWith("GET")) {
+    return declareDiscoveryExtension({
+      input: { text: "مرحبا بالعالم" },
+      inputSchema: textSchema,
+      output: {
+        example: {
+          endpoint: "GET /text/metrics",
+          cost_usd: 0.002,
+          metrics: { characters: 12, words: 2, sentences: 1, arabic_characters: 12, latin_characters: 0 },
+        },
+      },
+    });
+  }
+  if (route === "POST /text/metrics") {
+    return declareDiscoveryExtension({
+      bodyType: "json",
+      input: { text: "مرحبا بالعالم" },
+      inputSchema: textSchema,
+      output: {
+        example: {
+          endpoint: "POST /text/metrics",
+          cost_usd: 0.002,
+          metrics: { characters: 12, words: 2, sentences: 1, arabic_characters: 12, latin_characters: 0 },
+        },
+      },
+    });
+  }
+  if (route === "POST /text/normalize") {
+    return declareDiscoveryExtension({
+      bodyType: "json",
+      input: { text: "مرحبا بالعالم", mode: "search" },
+      inputSchema: {
+        type: "object",
+        properties: {
+          text: { type: "string", description: "The Arabic text to normalize." },
+          mode: { type: "string", enum: ["light", "search", "index"] },
+        },
+        required: ["text"],
+      },
+      output: {
+        example: {
+          endpoint: "POST /text/normalize",
+          cost_usd: 0.005,
+          text: "مرحبا بالعالم",
+          mode: "search",
+          changed: false,
+          applied: [],
+          before_chars: 12,
+          after_chars: 12,
+        },
+      },
+    });
+  }
+  if (route === "POST /audio/transcribe") {
+    return declareDiscoveryExtension({
+      bodyType: "json",
+      input: { audio_base64: "<base64 audio>", mime_type: "audio/webm" },
+      inputSchema: {
+        type: "object",
+        properties: {
+          audio_base64: { type: "string", description: "Base64-encoded audio file." },
+          mime_type: { type: "string" },
+        },
+        required: ["audio_base64"],
+      },
+      output: {
+        example: {
+          endpoint: "POST /audio/transcribe",
+          cost_usd: 0.02,
+          model: "gemini-3.5-transcribe",
+          text: "النص المستخرج من الصوت",
+        },
+      },
+    });
+  }
+  return declareDiscoveryExtension({
+    bodyType: "json",
+    input: { document_base64: "<base64 document>", mime_type: "image/jpeg" },
+    inputSchema: {
+      type: "object",
+      properties: {
+        document_base64: { type: "string", description: "Base64-encoded document image or PDF." },
+        mime_type: { type: "string" },
+      },
+      required: ["document_base64"],
+    },
+    output: {
+      example: {
+        endpoint: "POST /doc/extract",
+        cost_usd: 0.03,
+        document: {
+          document_type: "receipt",
+          merchant: "اسم المتجر",
+          date: "2026-10-22",
+          total: 12.5,
+          currency: "USD",
+          tax_number: null,
+          items: [{ name: "منتج", quantity: 1, price: 12.5 }],
+          notes: null,
+          raw_text: null,
+          confidence: 0.9,
+        },
+      },
+    },
+  });
+}
+
 export function createApp(cfg: AppConfig, facilitatorClient: FacilitatorClient) {
   const app = new Hono();
 
@@ -64,20 +187,26 @@ export function createApp(cfg: AppConfig, facilitatorClient: FacilitatorClient) 
 
   // ---- paid routes -------------------------------------------------------
   /**
-   * Bazaar discovery metadata is deliberately NOT attached to the REST routes.
+   * Bazaar discovery metadata.
    *
-   * The SDK validates any `extensions.bazaar` declaration with Ajv, and Ajv
-   * compiles JSON Schema by calling `new Function`. Cloudflare Workers forbid
-   * dynamic code generation ("Code generation from strings disallowed for this
-   * context"), so that validation throws on every cold isolate. The cost of
-   * the failed compile blows the Workers CPU limit and the first paid request
-   * of each isolate dies mid-flight, which makes the buyer see a hang instead
-   * of a 402. See HANDOFF.md ("Bazaar extension breaks paid routes on
-   * Workers").
+   * The SDK validates a route's `extensions.bazaar` declaration with Ajv at
+   * middleware-setup time, and Ajv compiles JSON Schema via `new Function`.
+   * Cloudflare Workers forbid dynamic code generation ("Code generation from
+   * strings disallowed for this context"), so that validation throws inside
+   * the request path: the isolate burns its whole CPU budget generating a
+   * validator it is not allowed to build, gets killed, and the buyer sees a
+   * hang instead of a 402. It looked random because it only bit the first
+   * paid request of each cold isolate. See HANDOFF.md, "Bazaar extension
+   * breaks paid routes on Cloudflare Workers".
    *
-   * The MCP server still ships Bazaar metadata: that path never runs Ajv, and
-   * it is the discovery surface PayAPI and the Bazaar actually index for MCP
-   * listings.
+   * So we never hand the SDK a route config that *declares* bazaar at
+   * setup time. Instead:
+   *   1. build the routes with no `extensions` (setup sees no bazaar, so the
+   *      AJV validation never runs),
+   *   2. register the bazaar extension on the resource server ourselves, so
+   *      the per-request enrichment path (which does NOT use Ajv) applies it,
+   *   3. attach the declaration to the route configs afterwards, so the 402
+   *      response carries the discovery metadata.
    */
   const routeEntries = Object.entries(PRICES).map(([route, price]): [string, RouteConfig] => [
     route,
@@ -113,7 +242,24 @@ export function createApp(cfg: AppConfig, facilitatorClient: FacilitatorClient) 
     cfg.network as `${string}:${string}`,
     new ExactEvmScheme(),
   );
-  app.use(paymentMiddleware(routes, server));
+
+  // (2) Register bazaar ourselves: the SDK would only do this on its AJV
+  // path, which is exactly the path we are avoiding.
+  server.registerExtension(bazaarResourceServerExtension);
+
+  // The middleware captures the routes object; `checkIfBazaarNeeded` runs on
+  // it synchronously here, while no route declares bazaar yet.
+  const middleware = paymentMiddleware(routes, server);
+
+  // (3) Now attach the discovery declaration to each route config. The
+  // per-request path reads it from here and enriches it without Ajv.
+  // `declareDiscoveryExtension` already returns `{ bazaar: {...} }`, which is
+  // exactly the shape `extensions` expects.
+  for (const [route, config] of Object.entries(routes) as [string, RouteConfig][]) {
+    config.extensions = bazaarFor(route);
+  }
+
+  app.use(middleware);
 
   // GET /text/metrics
   app.get("/text/metrics", async (c) => {

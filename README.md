@@ -12,6 +12,20 @@ service can pay a provider directly, with no payment processor in between.
 url https://payapi.market/mcp
 ```
 
+## Live endpoints
+
+| | URL |
+|---|---|
+| **REST API** | `https://arabic-pipeline.arabic-pipeline.workers.dev` |
+| **MCP server** (streamable HTTP) | `https://arabic-pipeline-mcp.arabic-pipeline.workers.dev/` |
+| OpenAPI | `https://arabic-pipeline.arabic-pipeline.workers.dev/openapi.json` |
+| x402scan | `https://www.x402scan.com/server/298e1e2b-3f5c-4890-9791-6d063fd20931` |
+| MCP registry | `io.github.skypantherr/arabic-pipeline` |
+
+The MCP server exposes the same four capabilities as tools, each behind its
+own x402 payment (`text_metrics`, `text_normalize`, `audio_transcribe`,
+`doc_extract`).
+
 ## Endpoints
 
 | Route | What it does | Price | Cost to serve |
@@ -32,13 +46,13 @@ url https://payapi.market/mcp
 
 ```bash
 # 1. Any paid route answers 402 with a payment challenge
-curl -i https://arabic-pipeline.<subdomain>.workers.dev/text/normalize \
+curl -i https://arabic-pipeline.arabic-pipeline.workers.dev/text/normalize \
   -H 'content-type: application/json' \
   -d '{"text":"مُحَمَّدٌ عَلِيّ","mode":"search"}'
 
 # 2. Free routes (no payment needed)
-curl https://arabic-pipeline.<subdomain>.workers.dev/openapi.json
-curl https://arabic-pipeline.<subdomain>.workers.dev/
+curl https://arabic-pipeline.arabic-pipeline.workers.dev/openapi.json
+curl https://arabic-pipeline.arabic-pipeline.workers.dev/
 ```
 
 ## How x402 payment works (for agents)
@@ -84,6 +98,13 @@ npm run typecheck
 
 See `DEPLOY.md`. The short version: `npm run login` → `npm run secret` →
 `npm run deploy` → register the listing.
+
+Two Workers are deployed from this repo:
+
+```bash
+npm run deploy              # REST API  -> arabic-pipeline.arabic-pipeline.workers.dev
+npx wrangler deploy -c wrangler.mcp.toml   # MCP server -> arabic-pipeline-mcp.arabic-pipeline.workers.dev
+```
 
 ## Licence
 

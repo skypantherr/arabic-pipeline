@@ -1,0 +1,124 @@
+﻿
+ Γ¢à∩╕Å wrangler 4.151.3
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Successfully created tail, expires at 2026-10-22T10:26:12Z
+Connected to arabic-pipeline-diag, waiting for logs...
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:14 AM
+  (log) TIMING GET /text/metrics status=402 handshake=370ms createApp=370ms total=373ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:15 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=6ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:15 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=5ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:15 AM
+  (log) TIMING GET /text/metrics status=402 handshake=12ms createApp=12ms total=14ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:15 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=6ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:15 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=5ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:16 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=5ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:16 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=5ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:16 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=5ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:16 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=6ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:16 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=5ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:16 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=6ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:16 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=7ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:16 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=6ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:16 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=6ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:16 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=7ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:16 AM
+  (log) TIMING GET /text/metrics status=402 handshake=2ms createApp=2ms total=5ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:16 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=5ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:17 AM
+  (log) TIMING GET /text/metrics status=402 handshake=2ms createApp=2ms total=5ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/text/metrics?text=x - Ok @ 10/22/2026, 7:26:17 AM
+  (log) TIMING GET /text/metrics status=402 handshake=3ms createApp=3ms total=5ms
+  (log) CACHE hit=true
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/ - Ok @ 10/22/2026, 7:27:20 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/ - Ok @ 10/22/2026, 7:27:23 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:04 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:04 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:04 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:05 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:05 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:05 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:05 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:05 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:05 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:05 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:06 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:06 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:06 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:06 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:06 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:06 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:06 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:06 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:07 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:07 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:07 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/healthprobe - Ok @ 10/22/2026, 7:28:07 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/ - Ok @ 10/22/2026, 7:28:53 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:28:55 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=8 - Ok @ 10/22/2026, 7:28:55 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=16 - Ok @ 10/22/2026, 7:28:55 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=24 - Ok @ 10/22/2026, 7:28:55 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=32 - Ok @ 10/22/2026, 7:28:55 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=40 - Ok @ 10/22/2026, 7:28:55 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=48 - Ok @ 10/22/2026, 7:28:55 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=56 - Ok @ 10/22/2026, 7:28:55 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=64 - Ok @ 10/22/2026, 7:28:55 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=72 - Ok @ 10/22/2026, 7:28:56 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=80 - Ok @ 10/22/2026, 7:28:56 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:07 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:08 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:08 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:08 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:08 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:08 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:08 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:08 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:08 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:08 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:08 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:08 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:09 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:09 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:09 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:09 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:09 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:09 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:09 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:09 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:10 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:10 AM
+GET https://arabic-pipeline-diag.arabic-pipeline.workers.dev/?o=0 - Ok @ 10/22/2026, 7:29:11 AM

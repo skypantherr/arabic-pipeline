@@ -3,12 +3,12 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { x402ResourceServer } from "@x402/core/server";
-import { HTTPFacilitatorClient } from "@x402/core/server";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
 import { createPaymentWrapper, type PaymentRequirements } from "@x402/mcp";
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import { PRICES, readConfig, type AppConfig, type Env } from "./config";
 import { normalizeArabic, textMetrics, type NormalizeMode } from "./lib/arabic";
+import { CachedFacilitatorClient } from "./lib/facilitator";
 import { GeminiError, extractDocument, transcribeAudio } from "./lib/gemini";
 
 /**
@@ -57,7 +57,7 @@ function text(value: unknown): string {
  * consecutive requests of one MCP session to different isolates, so
  * in-memory session state cannot be relied on.
  */
-async function buildServer(cfg: AppConfig, facilitatorClient: HTTPFacilitatorClient): Promise<McpServer> {
+async function buildServer(cfg: AppConfig, facilitatorClient: CachedFacilitatorClient): Promise<McpServer> {
   const resourceServer = new x402ResourceServer(facilitatorClient).register(
     cfg.network as `${string}:${string}`,
     new ExactEvmScheme(),
@@ -197,7 +197,11 @@ export default {
       return Response.json({ ok: true, service: "arabic-pipeline-mcp", network: cfg.network });
     }
 
-    const facilitator = new HTTPFacilitatorClient({ url: cfg.facilitatorUrl, timeoutMs: 30_000 });
+    const facilitator = new CachedFacilitatorClient({
+      url: cfg.facilitatorUrl,
+      timeoutMs: 10_000,
+      cacheOrigin: new URL(request.url).origin,
+    });
     const server = await buildServer(cfg, facilitator);
 
     const transport = new WebStandardStreamableHTTPServerTransport({

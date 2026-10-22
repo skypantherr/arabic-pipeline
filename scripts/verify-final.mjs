@@ -1,0 +1,15 @@
+﻿const REST="https://arabic-pipeline.arabic-pipeline.workers.dev";
+const MCP="https://arabic-pipeline-mcp.arabic-pipeline.workers.dev";
+const r1 = await fetch(REST+"/text/normalize",{method:"POST",headers:{"content-type":"application/json"},body:"{}"});
+const h1 = r1.headers.get("PAYMENT-REQUIRED"); const j1 = JSON.parse(Buffer.from(h1,"base64").toString("utf8"));
+console.log("REST 402:", r1.status, "| bazaar:", !!j1.extensions?.bazaar, "| amount:", j1.accepts[0].amount, "| payTo:", j1.accepts[0].payTo);
+for (const p of ["/","/health","/openapi.json"]) console.log("  REST", p, "->", (await fetch(REST+p)).status);
+const post = async (b)=>{const r=await fetch(MCP+"/",{method:"POST",headers:{"content-type":"application/json","accept":"application/json, text/event-stream"},body:JSON.stringify(b)});return {s:r.status,t:await r.text()};};
+const init = await post({jsonrpc:"2.0",id:1,method:"initialize",params:{protocolVersion:"2025-06-18",capabilities:{},clientInfo:{name:"p",version:"1"}}});
+console.log("MCP init:", init.s);
+const tl = await post({jsonrpc:"2.0",id:2,method:"tools/list",params:{}});
+console.log("MCP tools:", JSON.parse(tl.t).result.tools.map(t=>t.name).join(", "));
+const call = await post({jsonrpc:"2.0",id:3,method:"tools/call",params:{name:"text_normalize",arguments:{text:"مرحبا"}}});
+const inner = JSON.parse(JSON.parse(call.t).result.content[0].text);
+console.log("MCP 402:", inner.x402Version, "| amount:", inner.accepts[0].amount, "| payTo:", inner.accepts[0].payTo, "| extra.name:", inner.accepts[0].extra.name, "| bazaar:", !!inner.extensions?.bazaar);
+console.log("MCP health:", (await fetch(MCP+"/health")).status);

@@ -51,6 +51,16 @@ export interface AppConfig {
   geminiApiKey?: string;
   transcribeModel: string;
   visionModel: string;
+  /**
+   * Attach Bazaar discovery metadata to the REST routes.
+   *
+   * Only enable this on a Worker deployed with the `unsafe_eval`
+   * compatibility flag: the SDK validates the declaration with Ajv, which
+   * compiles JSON Schema via `new Function`, and plain Workers forbid that.
+   * See HANDOFF.md, "Bazaar extension breaks paid routes on Cloudflare
+   * Workers".
+   */
+  bazaarEnabled: boolean;
 }
 
 export interface Env {
@@ -60,6 +70,7 @@ export interface Env {
   GEMINI_API_KEY?: string;
   GEMINI_TRANSCRIBE_MODEL?: string;
   GEMINI_VISION_MODEL?: string;
+  X402_BAZAAR?: string;
 }
 
 const DEFAULT_PAY_TO = "0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6";
@@ -75,6 +86,7 @@ export function readConfig(env: Env = {}): AppConfig {
     geminiApiKey: env.GEMINI_API_KEY?.trim() || undefined,
     transcribeModel: env.GEMINI_TRANSCRIBE_MODEL?.trim() || "gemini-3.5-transcribe",
     visionModel: env.GEMINI_VISION_MODEL?.trim() || "gemini-3.6-flash",
+    bazaarEnabled: env.X402_BAZAAR?.trim() === "true",
   };
 }
 

@@ -89,29 +89,47 @@ never arrives. It is CPU-time-driven: `new Ajv(...)` + `ajv.compile()` of the
 2020-12 meta-schema costs ~50 ms of CPU, over the Workers per-request CPU
 budget.
 
-**Fix (shipped):** the REST routes no longer declare `extensions.bazaar`. The
-SDK's per-request enrichment path (`enrichExtensions` → `enrichDeclaration`)
-does **not** run Ajv, so metadata can still be attached safely *if* it is
-supplied directly rather than through the validating path — but the
-route-config route is exactly what triggers Ajv. The MCP server keeps Bazaar
-metadata (that path never runs Ajv) and works fine.
+**Fix (shipped):** never hand the SDK a route config that *declares* bazaar at
+setup time. Instead:
+1. build the routes with no `extensions` (setup sees no bazaar, so the AJV
+   validation never runs),
+2. register `bazaarResourceServerExtension` on the resource server ourselves,
+   so the per-request enrichment path (`enrichExtensions` →
+   `enrichDeclaration`, which does **not** use Ajv) applies the metadata,
+3. attach the declaration to the route configs *after* the middleware is
+   created, so the 402 response carries it.
 
-**Verified after the fix:** 40/40 and 15/15 POSTs returned 402 with **zero
-hangs** (was 2/30). All 7 HTTP methods × 4 routes = 28 probes return
-402/404/204 correctly, no 5xx, no hang. x402scan then reported
-**5 of 5 resources registered**.
+This restores Bazaar discovery with no Ajv. `declareDiscoveryExtension` already
+returns `{ bazaar: {...} }`, which is exactly the shape `extensions` wants
+(wrapping it again double-nests and the validator then reports
+`bazaar.info.input.type: Missing info.input.type`).
 
-**Consequence:** the REST routes have no Bazaar extension, so Coinbase's
-validate endpoint rejects them. Two ways forward, both cheap:
-1. Put the Bazaar extension on the **MCP server only** (already done) and let
-   Bazaar index the MCP tools — MCP is the discovery surface PayAPI and the
-   Bazaar actually index for MCP listings.
-2. If the REST routes must be Bazaar-indexed, the declaration has to reach the
-   402 response **without** passing through `validateBazaarRouteExtensions`.
-   Options: attach `extensions` via `enrichExtensions` only (no Ajv), or add
-   the `unsafe_eval` compatibility flag to the Worker (allows `new Function`)
-   — the latter trades Workers' CSP for Bazaar indexing, so it needs the
-   user's explicit yes. **Not done — needs a decision.**
+**Verified after the fix:** Coinbase's validator
+(`POST https://api.cdp.coinbase.com/platform/v2/x402/validate`) returns
+`valid: true`, `simulation.outcome: "accepted"` and a populated
+`bazaarExtension` for **all five** routes, with zero failing preflight
+checks. The MCP server keeps Bazaar metadata too (that path never ran Ajv).
+
+**Second issue found and fixed: the facilitator handshake stalled paid
+requests.** `x402ResourceServer.initialize()` fetches the facilitator's
+`/supported` document and the x402 HTTP middleware *awaits* that
+initialization before answering the first paid request of an isolate. Only
+paid routes wait for it, so only paid requests stalled — and the SDK retries
+a throttled `/supported` with exponential backoff (1s, 2s, 4s …), so one
+throttled handshake costs the buyer ~7s of dead time. Fixed by caching the
+handshake at the Cloudflare edge (`src/lib/facilitator.ts`): the `/supported`
+document is stored under a key on **our own origin** (the Workers Cache API
+only stores entries for the current zone) for 15 minutes, so cold isolates
+answer a paid request with no outbound call at all. Measured inside a Worker:
+handshake 370ms cold → **3ms** cached.
+
+**A measurement trap worth remembering:** this sandbox reaches the internet
+through a TLS-intercepting proxy, so `curl` fails with
+`SEC_E_ILLEGAL_MESSAGE` and a few percent of local `fetch` calls hang.
+Those hangs are **not** the service. Proof: 160 Cloudflare-to-Cloudflare
+probes (from a throwaway Worker probing the production URL) produced **zero**
+hangs, and the same probe run locally produced a handful. **Always confirm a
+suspected Worker hang from inside Cloudflare before changing Worker code.**
 
 ## Other decisions and why (round 7)
 
@@ -127,6 +145,10 @@ validate endpoint rejects them. Two ways forward, both cheap:
 4. **Kept the two Workers separate.** REST and MCP have different protocols
    and different index surfaces; one Worker would make the MCP URL ugly and
    the transports awkward. Two free Workers on one account cost nothing.
+5. **Throwaway Workers were deleted.** All diagnosis happened on
+   `arabic-pipeline-bazaar-test` and `arabic-pipeline-diag`; both were
+   removed from the account afterwards. The account now holds exactly
+   `arabic-pipeline` and `arabic-pipeline-mcp`.
 
 ## Still open — needs the user
 1. **GitHub device-code login for the MCP registry** (one click):
@@ -139,9 +161,26 @@ validate endpoint rejects them. Two ways forward, both cheap:
    is signed in; `git` has credential helper `manager` but no remote is
    configured yet. The registry entry references the repo URL, so
    `repository` should point at a real public repo.
-3. **Bazaar decision** (see above): MCP-only, or `unsafe_eval` on the REST
-   Worker.
+3. **Bazaar decision** — **resolved, no action needed.** Bazaar metadata is
+   now on the REST routes *and* the MCP server, and Coinbase's validator
+   accepts all five routes. The trick is attaching the declaration after the
+   middleware is created (see above) so the SDK's Ajv validation never runs.
 4. **Gemini key rotation**, whenever the user gets to it (their own browser).
+
+## Still open — needs the user
+1. **GitHub device-code login for the MCP registry** (one click):
+   `mcp-publisher login github` prints a code; go to
+   `https://github.com/login/device`, enter it, authorize. Then
+   `mcp-publisher publish server.json` in this folder publishes it as
+   `io.github.skypantherr/arabic-pipeline`. **No GitHub password or token is
+   ever shared with the agent** — the CLI does the OAuth handshake itself.
+   The device code expires after a few minutes, so run the command and
+   authorize promptly.
+2. **Push the repo to GitHub** (`skypantherr/arabic-pipeline`). GitHub Desktop
+   is signed in; `git` has credential helper `manager` but no remote is
+   configured yet. The registry entry references the repo URL, so
+   `repository` should point at a real public repo.
+3. **Gemini key rotation**, whenever the user gets to it (their own browser).
 
 ## Tool notes (new this session)
 - `wrangler tail` output is the fastest way to see Worker-side exceptions; the
