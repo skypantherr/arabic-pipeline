@@ -1,7 +1,11 @@
-# START HERE — build session brief (22 Oct 2026)
+# START HERE — build session brief (updated 22 Oct 2026, after setup)
 
 Folder: `C:\Users\DVDSTORE\OneDrive\Desktop\x402-arabic-pipeline`
-Read this file first, then `the-idea.md`, then `HANDOFF.md`.
+Read this file, then `DEPLOY.md` (the runbook), then `the-idea.md` (why this
+product) and `HANDOFF.md` (running log).
+
+**Status: the service is BUILT and VERIFIED LOCALLY. The remaining work is
+deploy → prove a real payment → publish the listing → measure for 30 days.**
 
 ---
 
@@ -10,279 +14,222 @@ Read this file first, then `the-idea.md`, then `HANDOFF.md`.
 ```
 Working dir: C:\Users\DVDSTORE\OneDrive\Desktop\x402-arabic-pipeline
 
-Read START-HERE.md first — it is the full brief with verified research, the
-build spec, and my constraints. Then read the-idea.md and HANDOFF.md.
+Read START-HERE.md, then DEPLOY.md — they are the brief and the runbook.
 
-Job: build, deploy, and register a free, zero-cost x402 pay-per-call API
-("Arabic pipeline") that pays USDC on Base to my Trust Wallet, and give me a
-30-day measurement plan with kill criteria. Ask me for the checklist in
-START-HERE.md §2 before you start — especially my Base USDC receive address.
+The x402 service is already written and tested (18/18 passing, typecheck clean).
+Your job is the remaining half:
+ 1. deploy it (wrangler login + secret + deploy) — my Cloudflare login is
+    skypantherr@hotmail.com and needs one browser approval;
+ 2. prove a real end-to-end payment on testnet, then mainnet;
+ 3. publish the listing (PayAPI Market, MCP registry, x402scan, Coinbase Bazaar)
+    and add the MCP server;
+ 4. give me the 30-day scoreboard + kill criteria;
+ 5. keep the fast lane (bounty) running in parallel.
 
-Rules: no upfront spending by me; no websites/ads/SEO; no local or
-Palestine-counterparty ideas; no re-litigating PayPal/Payoneer/Wise/Stripe;
-be honest about odds rather than manufacturing certainty; verify anything you
-claim; keep notes in HANDOFF.md.
+Ask me before anything that spends money or needs my click. Never ask me for my
+seed phrase or private key. Rotate the Gemini key first — the current one was
+pasted in chat.
+
+Rules: no websites/ads/SEO; no local or Palestine-counterparty ideas; no
+re-litigating PayPal/Payoneer/Wise/Stripe; be honest about odds; verify claims;
+keep notes in HANDOFF.md.
 ```
 
 ---
 
-## 1. The mission
+## 1. What was already done (don't redo it)
 
-Build one small serverless service — **"Arabic pipeline"** — that sells four
-micro-capabilities per call, paid automatically in **USDC on Base** straight into
-the user's Trust Wallet, with no account, no KYC, no card, no domain, and no
-audience required.
+**Environment (checked):** Node v22.23.2, npm 10.9.8, git 2.55.0 with identity
+`SkyPanther / skypantherr@hotmail.com`, GitHub Desktop installed and signed in
+(user `skypantherr`), **no `gh` CLI**, **no Python** (hence TypeScript only).
 
-The concept in one line: the internet has an unused "402 Payment Required"
-status code; a service can answer a request with *"this costs 2 cents, pay to
-wallet X"*, and any program can pay it automatically and retry. **A machine
-buys the work at the door and the coin lands in the wallet.** Every normal
-marketplace dies for this user at the payment layer (PayPal/Payoneer/Wise/Stripe
-exclude Palestinians); x402 removes that layer.
+**Dependencies, pinned and installed:** `@x402/core` 2.28.0, `@x402/evm` 2.28.0,
+`@x402/hono` 2.28.0, `hono` 4.13.13, `zod` ^3.25, `wrangler` 4.151.3,
+`vitest` 5.0.5, `typescript` ^5.9, `@cloudflare/workers-types` ^5, `@types/node`
+^22.12. (Peer-dep pin notes: vitest 5 needs `@types/node` >=22.12; wrangler
+4.151.3 needs `workers-types` ^5.)
 
-Full reasoning and evidence: `the-idea.md`. Data: §6 below.
+**API facts that were wrong in the earlier brief — corrected here (verified
+against the official SDK/repo, 22 Oct 2026):**
+- The x402 repo moved to **x402-foundation/x402** (coinbase/x402 is a dev fork).
+  The modern SDK is **`@x402/*` v2.28.0**; the old `x402` / `x402-express` 1.2.0
+  packages are legacy v1.
+- The payment middleware is `paymentMiddleware(routes, server)` from
+  `@x402/hono`, with `new x402ResourceServer(facilitatorClient).register(network,
+  new ExactEvmScheme())` from `@x402/evm/exact/server`.
+- **The 402 challenge lives in the `PAYMENT-REQUIRED` response header (base64
+  JSON), not in the body.** The body is `{}` by default; we set a helpful
+  `unpaidResponseBody`. Always decode the header when asserting.
+- The challenge fields are: `x402Version: 2`, `accepts[0] = { scheme:"exact",
+  network, amount (atomic units, string), asset, payTo, maxTimeoutSeconds,
+  extra:{name,version} }`. The buyer retries with the `PAYMENT-SIGNATURE` header;
+  the server returns `PAYMENT-RESPONSE`.
+- `RouteConfig` requires `accepts: PaymentOption | PaymentOption[]`; `network` is
+  typed as `` `${string}:${string}` `` so it needs a cast.
 
----
+**Live data captured (not re-research):**
+- Facilitator: **`https://x402.dexter.cash`** — free, no account, no fee, Base +
+  10 EVM chains + Solana (Base mainnet route). Testnet alternative:
+  `https://x402.org/facilitator` (the SDK default; dev/testnet only).
+- USDC on Base: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`; the SDK fills
+  `extra.name = "USD Coin"` automatically (PayAPI's hard requirement).
+- Gemini key works. Available models include `gemini-3.5-transcribe` (verified
+  live), `gemini-3.6-flash` (verified live, JSON-schema mode works),
+  `gemini-3.8-flash`, `gemini-2.5-flash`, `gemini-3.8-flash-tts`.
 
-## 2. What the user must provide (ask for these, in this order)
+**Verified 402 output of our service (from the test suite):**
+`x402Version 2` · `scheme "exact"` · `network "eip155:8453"` ·
+`asset 0x833589fCD…2913` (USDC/Base) ·
+`payTo 0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6` ·
+`extra.name "USD Coin"` · amounts atomic: 2000 ($0.002), 5000 ($0.005),
+20000 ($0.02), 30000 ($0.03) · base64 `PAYMENT-REQUIRED` header present ·
+CORS + preflight (204) working.
 
-### Required before anything can be paid out
-1. **Trust Wallet "Base USDC" receive address** — a `0x…` EVM address. Public
-   info, safe to paste. Ask for a **dedicated** address (not their main savings
-   wallet) and remind them it will be published in a public `openapi.json` and
-   in listings — that's fine, but it should be a dedicated address.
-2. **The email address** to use for Cloudflare / GitHub / PayAPI / MCP registry
-   / x402scan registrations.
-3. **Confirmation of the endpoint set to launch first.** Recommendation:
-   ship `text/normalize` + `text/metrics` first (both pure code, **$0 cost**,
-   instant responses) to prove the payment path end-to-end, then add
-   `audio/transcribe` + `doc/extract` (model-backed).
-4. **Local tooling preference** — pick one:
-   - (a) they install **Node 20+ and git** locally and we deploy with
-     `wrangler` from a repo, or
-   - (b) **no local installs** → I produce a single-file Worker they paste into
-     the Cloudflare dashboard (works fine; less convenient iteration).
-5. **Can they judge Arabic output quality?** (yes/no) — determines whether
-   `audio/transcribe` and `doc/extract` can be QA'd by them or need a
-   different acceptance test.
+**Tests:** `npm test` → 18/18 pass. `npm run typecheck` → clean.
+`node scripts/check-gemini.mjs` → live Gemini check (key + both models).
 
-### Accounts to create (all free, no card) — walk them through it
-6. **Cloudflare account** (free) — required for Workers.
-7. **GitHub account** (free) — recommended: hosts the code publicly and is
-   required-ish for publishing an MCP server (server name should be
-   `io.github.<username>/arabic-pipeline`).
-8. **Optional, only for the two model-backed endpoints:** a free API key from
-   Google AI Studio (Gemini) or Groq, or Cloudflare Workers AI. Free tiers
-   generally need no card. Not needed for endpoints 3-4.
-
-### Never ask for, never accept
-- Seed phrase or private key. If a key is ever needed to *generate* something,
-  use the wallet UI or a fresh throwaway key the user creates themselves.
-- Passwords or card numbers. Every account in this plan uses a passkey/Google
-  login; the agent never needs the credential.
-
-### Nice to have, not blocking
-9. Whether they have a bank card available for optional paid tiers later
-   (irrelevant until the endpoints 3-4 are earning).
-10. Confirmation they'll run the **fast lane** (below) in parallel — it's their
-    actual first-dollar plan.
+**Git:** repo initialised, one commit, `.dev.vars` correctly **not** tracked.
 
 ---
 
-## 3. Build spec
+## 2. What the user already gave you (don't ask again)
 
-**Repo layout (suggested)**
+| Item | Value |
+|---|---|
+| Trust Wallet Base USDC receive address | `0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6` |
+| Email (accounts, listings, contact) | `skypantherr@hotmail.com` |
+| GitHub user | `skypantherr` (signed in in browser + GitHub Desktop) |
+| Cloudflare account | created with the same email — needs one `wrangler login` approval |
+| Gemini API key | in `.dev.vars` (git-ignored). **Rotate it** — it was pasted in chat |
+| Arabic QA | the user is a native Arabic speaker and will QA outputs |
+| Card | **not to be used** — no card-gated services, no paid tiers |
+| Endpoints to ship | approved: `text/normalize` + `text/metrics` first, then the two model-backed ones |
+| Local tooling | node + git present; GitHub Desktop for pushing (no `gh` CLI) |
+
+**Still needs the user (one click each):** `wrangler login` (Cloudflare OAuth),
+the rotated Gemini key via `npm run secret`, a throwaway testnet wallet for the
+testnet payment test, and a push to a new GitHub repo.
+
+---
+
+## 3. The service as built (reference — change only if you have a reason)
+
 ```
-arabic-pipeline/
-  worker/            # the Cloudflare Worker: all endpoints + x402 wiring
-    src/index.ts
-    src/routes/{transcribe,extract,normalize,metrics}.ts
-    src/lib/{x402.ts,arabic.ts,openapi.ts}
-  openapi.json      # served at GET /openapi.json
-  README.md         # includes: url https://payapi.market/mcp
-  mcp/              # MCP server wrapping the same handlers
-  test/             # local tests: 402 shape, price match, Arabic correctness
-  DEPLOY.md
+src/index.ts        Worker entry; lazy-cached facilitator client + Hono app
+src/app.ts          Hono app, CORS, x402 middleware, all routes
+src/config.ts       env config, price table, facilitator defaults
+src/lib/arabic.ts   normalizeArabic() + textMetrics() — pure code, $0 to serve
+src/lib/gemini.ts   transcribeAudio() + extractDocument() (JSON schema mode)
+src/lib/openapi.ts  OpenAPI 3.1 with per-operation x-payment-info
+test/arabic.test.ts unit tests for the text utilities
+test/protocol.test.ts  402 challenge, pricing, CORS, OpenAPI shape
 ```
 
-**The four endpoints (same engine, same spec, one MCP server)**
+**Routes and prices**
 
-| Route | Job | Price | Cost to serve |
-|---|---|---|---|
-| `POST /audio/transcribe` | Arabic (or English) audio → clean text | **$0.02**/call | free model tier |
-| `POST /doc/extract` | Arabic PDF/image → structured rows (receipts, invoices, IDs) | **$0.03**/call | free tier / local OCR |
-| `POST /text/normalize` | Arabic text cleanup: tashkeel stripping, alef/ya/ta-marbuta unification, Arabic-Indic ↔ Western numerals, RTL-safe whitespace, search-form shaping | **$0.005**/call | **$0** (pure code) |
-| `GET /text/metrics` | word/char counts, readability, keyword density, Arabic-vs-English detection | **$0.002**/call | **$0** (pure code) |
+| Route | Price | Cost to serve |
+|---|---|---|
+| `GET /text/metrics` · `POST /text/metrics` | $0.002 | $0 |
+| `POST /text/normalize` | $0.005 | $0 |
+| `POST /audio/transcribe` | $0.02 | model call |
+| `POST /doc/extract` | $0.03 | model call |
 
-**x402 wiring** — use a maintained library, never hand-rolled crypto:
-- Node/TS: `x402-express` (or the `@x402/*` family) — the server returns the
-  402 challenge with `payTo` = the user's Base address, network
-  `eip155:8453` (Base), asset = USDC (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`),
-  `extra.name` = **"USD Coin"** (PayAPI fails settlement otherwise), price mode
-  `fixed`, currency `USD`.
-- Python alternative: the `x402` package.
-- The payment must land in the **user's Base address**. Confirm the challenge
-  amount equals the price in the spec (PayAPI rejects a mismatch).
+Free routes: `GET /`, `GET /health`, `GET /openapi.json`.
 
-**OpenAPI requirements (from x402scan's discovery spec — agents read this)**
-- Top-level: `openapi`, `info.title`, `info.x-guidance`, `info.version`, `paths`.
-- For paid ops: `responses.402` **and** `x-payment-info`.
-- `info.x-payment-info.protocols` = `[{ "x402": {} }]`; one pricing mode
-  (`fixed` or `dynamic`) with `currency`.
-- `price.amount` is decimal USD; runtime `accepts[].amount` is atomic units
-  (USDC `0.01` → `"10000"`).
-- `info.contact.email` — the user's email (lets them verify ownership of the
-  origin and reach you).
-- `info.x-guidance` — one plain sentence telling an agent which endpoint to call
-  and with what.
-- Use `security` + `components.securitySchemes` to declare auth (none needed).
+`POST /text/normalize` takes `{ text, mode?: "light"|"search"|"index" }`.
+`light` = whitespace/digit/bidi cleanup only; `search` = + tashkeel removal +
+letter folding; `index` = + punctuation stripped (dedup/index key).
 
-**MCP server** — same four tools, names matching the routes, descriptions that
-say what each does and what it costs. This is how agents actually find tools
-(486 of PayAPI's 832 listings expose MCP endpoints).
-
-**Hosting** — Cloudflare Workers, free tier, durable `*.workers.dev` URL.
-**Do not use** trycloudflare / ngrok / sslip / zrok — PayAPI explicitly rejects
-those hosts as ephemeral.
-
-**README must contain** the line `url https://payapi.market/mcp` so agents
-know where to search.
+**Notes for whoever extends it**
+- `src/lib/arabic.ts` deliberately avoids `RegExp.test()` with a `/g` flag to
+  gate a `replace()` — `test()` advances `lastIndex` and silently skips work.
+- The 402 body is custom via `unpaidResponseBody`; it must return
+  `{ contentType, body }` where `body` is an **object**, not a JSON string.
+- `wrangler.toml` holds `[vars]`; secrets go through `wrangler secret put`.
+- `nodejs_compat` is enabled in `compatibility_flags` for viem/SDK compatibility.
 
 ---
 
-## 4. Registration payloads (all free, no KYC, no card)
+## 4. Remaining work (in order) — full detail in `DEPLOY.md`
 
-1. **PayAPI Market** — `https://payapi.market/list`
-   - Form: name, email, optional company. "Payout details come next, and they
-     are optional." They then run **one $0.10 canary call** themselves; if the
-     call returns real product and the money landed on the listed wallet, the
-     listing goes live with a **settlement-verified badge** (on-chain receipt).
-   - Their stated requirements: durable URL, the paid route, **a Base USDC
-     wallet you control**, price matching the live 402, `extra.name` = "USD Coin".
-   - Rejections to avoid: ephemeral hosts, prepaid credits instead of per-call
-     x402, `payTo` ≠ the wallet on the form, duplicate product/sub-path listing.
-2. **Official MCP registry** — publish the MCP server (name
-   `io.github.<username>/arabic-pipeline`).
-3. **x402scan registry** — `https://www.x402scan.com/resources/register` (free,
-   SIWX wallet auth). Benefit: x402scan is the explorer that tracks calls and
-   revenue, so the listing becomes *observable*.
-4. **Coinbase x402 Bazaar** — discovery layer for agents
-   (`docs.cdp.coinbase.com/x402/seller/get-discovered`).
-5. Optionally the public search API the agents use: `payapi.market/agent/search?q=`
-   and `/agent/list`.
-
----
-
-## 5. Definition of done (the build session's checklist)
-
-- [ ] Repo with Worker + `openapi.json` + README (+ MCP server) + tests.
-- [ ] Deployed at a durable `*.workers.dev` URL.
-- [ ] `GET /openapi.json` served and consistent with the runtime 402 challenge.
-- [ ] **End-to-end money test:** the user calls their own paid endpoint, the 402
-      challenge appears with their Base address, payment settles, the real
-      answer comes back, and a receipt is visible on BaseScan.
-- [ ] All four endpoints return correct Arabic output (unit tests + the user's
-      own QA on samples).
-- [ ] Listed on PayAPI Market (settlement-verified), MCP registry, x402scan
-      registry, Coinbase Bazaar.
-- [ ] A one-page "how to use + how to read your revenue" note for the user.
-- [ ] 30-day measurement plan + kill criteria (below).
-- [ ] `HANDOFF.md` updated with what was built, what broke, and what to check next.
+1. **Rotate the Gemini key** (revoke the pasted one in AI Studio, make a new
+   one, put it in `.dev.vars` and `npm run secret`).
+2. **Testnet end-to-end** (free): throwaway wallet + Base Sepolia faucet funds,
+   `X402_NETWORK=eip155:84532`, `https://x402.org/facilitator`, official
+   `@x402/fetch` + `@x402/evm` client → 402 → sign → retry → 200 + receipt on
+   BaseScan. **Verify the Base Sepolia USDC address before use.**
+3. **Mainnet deploy**: `npm run login` → `npm run secret` → `npm run deploy`.
+   Then the live checklist (free routes, 402, one real $0.01 payment, receipt
+   into the user's address). The buyer needs **$0.01 USDC**; the first bounty
+   payout covers it.
+4. **Publish**: PayAPI Market form (they run a $0.10 canary → settlement-verified
+   badge), official MCP registry, x402scan registry, Coinbase Bazaar. Add the
+   **MCP server** with `@x402/mcp` (name `io.github.skypantherr/arabic-pipeline`).
+   486 of PayAPI's 832 listings expose MCP endpoints — that's the real
+   discovery channel. README already contains the required
+   `url https://payapi.market/mcp` line.
+5. **Push to GitHub** (`skypantherr/arabic-pipeline`) via GitHub Desktop.
+6. **30-day scoreboard**: calls, unique buyers, revenue per call.
+   Success = 10 buyers × 500 calls × $0.02 ≈ $100/month. Kill = 0 calls in 30
+   days → repoint the same engine at a proven-thin class (regulatory/filings
+   data, or enrichment/people data) rather than starting over. Never build a
+   second service before the first has one paying caller.
+7. **Fast lane in parallel** (see §7) — that is the first-dollar plan.
 
 ---
 
-## 6. Verified data (do not re-research)
+## 5. Definition of done (updated)
 
-**x402scan.com (fetched 22 Oct 2026)**
-- 30 days: **3.07M transactions, $1.50M volume, 35.74K buyers, 38K sellers**.
-- 24 hours: 113.29K txns, $119.87K, 3.31K buyers, 2K sellers.
-- Chains (24h): Base 88,349 txns / $98.44K / 1,529 sellers / 3,146 buyers;
-  Solana 25,283 / $21.69K / 117 sellers / 169 buyers.
-- Facilitators (24h): Coinbase 77,760 txns; PayAI 23,256; FluxA 10,082 txns /
-  $90.18K (high value per call); Dexter; Ultravioleta DAO; Primer; Meridian.
-- Top 30-day services: BlockRun (Solana) $2.13K / 523K txns / 205 buyers;
-  Claw402 $1.20K / 488K / 186; BlockRun $1.78K / 102K / 598; X Pay $7.80K /
-  62K / 282; StableEnrich $1.26K / 48.9K / 344; OneShot $396 / 43.7K / 87;
-  Cluster Protocol $32.9K / 39K / 721; BotPay $1.78K / 24.4K / 368;
-  **dTelecom (WebRTC/STT/TTS) $36.39K / 16.5K / 29 = $2.20 per call** ← best
-  per-call revenue in the ecosystem; Agent402 $275 / 13.4K / 273; OneShot
-  pricing card: web search $0.001, web read $0.002, research $0.01, person
-  profile $0.005, dossier $0.10, social accounts $0.50, voice call $0.35/min.
-- **Average seller ≈ $39/month** ($1.5M ÷ 38K) — the base rate to be honest about.
-- Modal transaction on the network: **under $0.01**.
-- x402scan's own API (`/api/x402/*`) is itself x402-gated (~$0.01–0.02 per read).
-
-**PayAPI Market (fetched 22 Oct 2026)**
-- 832 listings, **821 settlement-verified**, 670 providers claimed, 46+
-  distinct providers actually observed; 5,734 endpoints; 486 with MCP endpoints.
-- Categories: Data, Finance, Intelligence, Tools, Verification. Price min
-  $0.001, median $0.01, max $0.50. Discovery: `/agent/list`, `/agent/search?q=`,
-  `/agent/get`, `/openapi.json`, `/.well-known/x402`, MCP at `/mcp`.
-- Supply concentration: AutoScrape (38 listings), PayAPI first-party (10),
-  LoneStarOracle (6), then solo builders. **The "832" is mostly a few bulk
-  providers — you are not competing with 800 people.**
-- In the 100 unique listings pullable (their API ignores `skip`, so this is a
-  100-listing sample, not the full 832): voice/audio appeared **once**;
-  Arabic, translation, OCR, RTL/bidi, Hijri appeared **zero** times.
-- Listing requirements: durable URL; paid route 402s to **your Base USDC
-  wallet**; price matches the live 402; `extra.name` = "USD Coin"; they pay a
-  $0.10 canary; no KYC/country restriction mentioned; free listing; keep 100%.
-
-**Other rails (verified earlier this session)**
-- Trust Wallet: 100+ chains; USDC/USDT on Ethereum, Base, Solana, TRON, BSC,
-  Arbitrum; self-custody.
-- HackerOne: crypto payout = BTC or **USDC on Ethereum**, $15 min, daily 11pm
-  UTC, 1–2 days. Gates: Veriff ID (**supports Palestine (State of)** + Arabic
-  docs, no VPN), payment method, tax form (W-8BEN). ID verification mandatory
-  for paid programs since Aug 2026. Low-severity findings avg $173.
-- HackenProof: USDC **Base**, **100 USDC min withdrawal**, ≤48 business hours,
-  2FA, **no KYC in most cases**; web/app scopes (CEX front-ends) as well as
-  Solidity.
-- Superteam Earn: filter **Region = Global**; external-sponsor listings pay the
-  linked wallet (sponsor may ask KYC); Superteam-sponsored need KYC + payment
-  form, paid within 7 days. Live example: "$CHIMP" thread, $500 pool, **$25 each
-  for ranks 4–25 of ~250 entries**, judged on craft, deadline 14 Nov 2026.
-- DeskCrew x402 paid-answer board: ~$0.08 to enter, 85% share; published odds
-  82% of $1 rows awarded, 4.7 entrants/row (~17% per attempt), decision median
-  23.8h, payout 0.37h after approval; **board empty at time of check**, lifetime
-  $69.74 / 83 payouts / 30 wallets.
-- BOP: IBAN local 1700-150-150, int 0097022946420; SWIFT `PALSPS22`.
-- BTC spot 22 Oct 2026: $84,534.5.
+- [x] Repo, pinned deps, toolchain verified
+- [x] Worker + x402 middleware + 4 paid routes + OpenAPI + README + tests
+- [x] 402 challenge verified field-by-field (asset, extra.name, payTo, amounts)
+- [x] Gemini models verified live
+- [x] Git initialised, secrets excluded
+- [ ] Testnet payment round-trip proven (receipt on BaseScan)
+- [ ] Mainnet deployed to a `*.workers.dev` URL, health + 402 + one real payment checked
+- [ ] Listed on PayAPI Market (settlement-verified), MCP registry, x402scan, Bazaar
+- [ ] MCP server published
+- [ ] Pushed to GitHub
+- [ ] 30-day measurement plan + kill criteria handed to the user
+- [ ] `HANDOFF.md` updated
 
 ---
 
-## 7. The 30-day measurement plan and kill criteria
+## 6. Verified market data (do not re-research)
 
-- **Ship 3–4 endpoints on ONE engine.** Don't build a second engine before the
-  first has a single paying caller.
-- **Weekly check (x402scan dashboard + your own facilitator receipts):** calls,
-  unique buyers, revenue per call, and which endpoint gets called.
-- **Success threshold (from the data):** 10 buyers × 500 calls × $0.02 ≈
-  **$100/month**. Top services have 100–700 buyers; the average seller $39.
-  Believe it at ~10 real buyers, not one lucky call.
-- **Kill criterion: 0 calls in 30 days → the Arabic buyer pool doesn't exist
-  yet.** Then repoint the **same engine** at a proven-thin class:
-  regulatory/filings data (one supplier, sells well) or enrichment/people data
-  (344 buyers at $1.26K/mo). The engine doesn't change; only the job does.
-- **Second kill criterion:** if calls happen but revenue per call < 20% of list
-  price, raise price or re-scope; the buyer isn't finding it useful.
+**x402scan.com (22 Oct 2026).** 30 days: **3.07M transactions, $1.50M volume,
+35.74K buyers, 38K sellers**. 24 hours: 113.29K txns, $119.87K, 3.31K buyers,
+2K sellers. **Average seller ≈ $39/month** ($1.5M ÷ 38K) — the base rate to be
+honest about. Chains (24h): Base 88,349 txns / $98.44K / 1,529 sellers / 3,146
+buyers; Solana 25,283 / $21.69K. Facilitators (24h): Coinbase 77,760 txns;
+PayAI 23,256; FluxA 10,082 txns / $90.18K; Dexter; Ultravioleta DAO; Primer;
+Meridian. Top services (30d): BlockRun (Solana) $2.13K / 523K calls / 205
+buyers; Claw402 $1.20K / 488K / 186; X Pay $7.80K / 62K / 282; StableEnrich
+$1.26K / 48.9K / 344; OneShot $396 / 43.7K / 87; Cluster Protocol $32.9K / 39K /
+721; BotPay $1.78K / 24.4K / 368; **dTelecom (WebRTC/STT/TTS) $36.39K / 16.5K /
+29 = $2.20 per call** ← best per-call revenue in the ecosystem; Agent402 273
+buyers. Modal transaction on the network: **under $0.01**. PayAPI median listed
+price: $0.01.
+
+**Supply gaps.** PayAPI shows "832 APIs / 821 settlement-verified / 670
+providers" but supply is concentrated: in the 100 unique listings pullable
+(their API ignores `skip`), AutoScrape has 38, PayAPI's own first-party 10,
+LoneStarOracle 6, then solo builders. **Voice/audio appeared once; Arabic,
+translation, OCR, RTL and Hijri appeared zero times.**
+
+**Other rails (verified earlier).** HackerOne: USDC on **Ethereum**, $15 min,
+daily 11pm UTC, 1–2 days; gates = Veriff ID (**supports Palestine + Arabic
+docs**, no VPN), payment method, tax form. HackenProof: USDC **Base**, 100 USDC
+min, ≤48 business hours, 2FA, **no KYC in most cases**; web/app scopes.
+Superteam Earn: **Region = Global**; external-sponsor listings pay the linked
+wallet; live example "$CHIMP" thread, $500 pool, **$25 each for ranks 4–25 of
+~250 entries**, deadline 14 Nov 2026. DeskCrew x402 board: $0.08 to enter, 85%
+share, 82% of $1 rows awarded, 4.7 entrants (~17%/attempt), board empty at time
+of check, lifetime $69.74 / 30 wallets. BTC spot 22 Oct 2026: $84,534.5.
 
 ---
 
-## 8. The fast lane (keep running in parallel — this is the first-dollar plan)
-
-The x402 build is the *compounding* lane with a $39/seller/month base rate. The
-first dollar comes from the lanes with **published per-attempt odds**:
-1. **Superteam Earn Global content bounty** — ~10% per entry, $25 per win, no
-   capital, paid to wallet. Two entries ≈ 2 hours.
-2. **DeskCrew x402 paid-answer board** — $0.08 in, ~$0.85 out, ~17% per attempt
-   (needs a ~$0.10 float; board was empty — check it).
-3. **Bug bounty** — HackerOne ($15 floor, USDC) / HackenProof (100 USDC Base,
-   no KYC in most cases).
-
----
-
-## 9. Dead ends (do not propose these again)
+## 7. Dead ends (do not propose these again)
 
 PayPal / Payoneer / Wise / Stripe / Revolut (exclude Palestinians) · Bybit
 fiat/P2P (its restricted-issuing-countries list names "Palestine (State of)"
@@ -291,24 +238,27 @@ documented freezes/seizures of Palestinian-linked funds; P2P has no local/ILS
 rail) · RapidAPI (PayPal-only provider payouts) · Algora (Stripe) · OnlyDust
 (winding down) · Topcoder (Trolley bank) · Opire (Stripe vs crypto, conflicting
 sources) · Honeygain ($20 PayPal floor) · Packet Storm (domain parked) ·
-Sherlock ($250 stake) · Bitmedia/Coinzilla/Cointraffic (KYC or traffic floors) ·
-exchange sign-up bonuses (deposit/trade-gated) · bandwidth sharing, faucets,
-quizzes, airdrop farming, free-cloud-mining (dead or excluded) · websites +
-AdSense + SEO (needs paid domain + traffic) · AADS ad lane (AADS bans free
-subdomains and needs a 3-month-old paid domain; effective CPM is cents, so
-$85 ≈ 1.7–4.2M impressions; average AADS publisher earns ~$50/month) · anything
-local / involving Palestinian counterparties (explicitly ruled out by the user).
+Sherlock ($250 stake) · exchange sign-up bonuses (deposit/trade-gated) ·
+bandwidth sharing, faucets, quizzes, airdrop farming, free-cloud-mining (dead or
+excluded) · websites + AdSense + SEO (needs paid domain + traffic) · the AADS ad
+lane (bans free subdomains, needs a 3-month-old paid domain, cents-level CPM,
+~$50/month average publisher) · anything local / involving Palestinian
+counterparties (explicitly ruled out) · card-gated services (the user has a debt
+card and won't use it).
 
 ---
 
-## 10. Folder contents
+## 8. Folder contents
 
 | File | What it is |
 |---|---|
 | `START-HERE.md` | this brief — read first |
-| `the-idea.md` | the concept explained plainly + the work breakdown + the data + the idea + kill criteria |
-| `methods.md` | method families that don't need an audience (x402 APIs, blind-scored competitions, machine-priced micro-work, bounty pools, bug bounty) |
-| `aads-reality-check.md` | reality check on the "free utility tools + AADS" proposal (mostly a dead end) |
-| `first-dollar-playbook.md` | platform/rail analysis: which payment rails work for a Palestinian, which don't |
-| `crevices.md` | earlier framing + corrections (Binance P2P has no local rail; Daejin needs a $5 position). Its local/corridor sections are **out of scope** |
-| `HANDOFF.md` | running notes, decisions and why, per-session state |
+| `DEPLOY.md` | the runbook: testnet → mainnet → listings → 30-day plan |
+| `README.md` | public service README (contains the required discovery line) |
+| `src/`, `test/` | the service and its tests |
+| `the-idea.md` | the concept explained plainly + the data + the idea + kill criteria |
+| `methods.md` | method families that don't need an audience |
+| `aads-reality-check.md` | reality check on the "free utility tools + AADS" idea |
+| `first-dollar-playbook.md` | payment-rail analysis for a Palestinian (what works, what doesn't) |
+| `crevices.md` | earlier framing + corrections; corridor sections out of scope |
+| `HANDOFF.md` | running notes, decisions and why |

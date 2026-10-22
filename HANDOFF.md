@@ -1,17 +1,64 @@
 # HANDOFF
 
 > **Folder renamed** `New folder` → `The402` → **`x402-arabic-pipeline`**.
-> **A fresh session is starting to do the actual build.** That session should
-> read **`START-HERE.md`** first — it contains the paste-prompt, the build spec,
-> the exact list of things the user must provide, the verified data, the
-> definition of done, and the 30-day kill criteria. This file is the running
-> log; `START-HERE.md` is the brief.
+> **A fresh session is starting to do the remaining work.** That session should
+> read **`START-HERE.md`** (brief) and **`DEPLOY.md`** (runbook) first. This file
+> is the running log; `START-HERE.md` is the brief.
+>
+> **State: the service is BUILT and VERIFIED LOCALLY (18/18 tests, typecheck
+> clean, 402 challenge field-by-field verified, Gemini models live-verified, git
+> committed). Remaining: deploy → testnet payment proof → mainnet → publish
+> listings + MCP server → 30-day measurement → fast lane in parallel.**
+
+## Round 6 — setup session (this one): what was actually built and verified
+- **Toolchain verified:** Node v22.23.2, npm 10.9.8, git 2.55.0 (identity
+  `SkyPanther / skypantherr@hotmail.com`), GitHub Desktop signed in as
+  `skypantherr`, **no `gh` CLI**, **no Python** → TypeScript only.
+- **Deps installed + pinned:** `@x402/core` 2.28.0, `@x402/evm` 2.28.0,
+  `@x402/hono` 2.28.0, `hono` 4.13.13, `zod` ^3.25, `wrangler` 4.151.3,
+  `vitest` 5.0.5, `typescript` ^5.9, `@cloudflare/workers-types` ^5,
+  `@types/node` ^22.12. (Peer pins: vitest 5 needs @types/node >=22.12;
+  wrangler 4.151.3 needs workers-types ^5. First install failed twice on these
+  two peer constraints — that's why the versions are what they are.)
+- **Corrections to the round-5 brief (verified against the official SDK/repo):**
+  the x402 repo moved to **x402-foundation/x402**; the modern SDK is
+  **`@x402/*` v2.28.0** (the `x402`/`x402-express` 1.2.0 packages are legacy
+  v1); middleware = `paymentMiddleware(routes, server)` + `x402ResourceServer
+  (facilitator).register(network, new ExactEvmScheme())`; **the 402 challenge
+  lives in the base64 `PAYMENT-REQUIRED` header, not the body** (body defaults
+  to `{}`; we set `unpaidResponseBody` and it must return an **object**, not a
+  JSON string); challenge fields = `x402Version 2`, `accepts[0]{scheme,network,
+  amount(atomic string),asset,payTo,maxTimeoutSeconds,extra{name,version}}`;
+  buyer retries with `PAYMENT-SIGNATURE`, server replies `PAYMENT-RESPONSE`.
+  `RouteConfig.accepts` is required; `network` is typed `` `${string}:${string}` ``.
+- **Facilitator:** `https://x402.dexter.cash` (free, no account, no fee, Base +
+  10 EVM + Solana). Testnet: `https://x402.org/facilitator` (SDK default, dev
+  only). USDC/Base `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`; the SDK fills
+  `extra.name = "USD Coin"` (PayAPI's hard requirement) automatically.
+- **Gemini:** key works. `gemini-3.5-transcribe` live-verified;
+  `gemini-3.6-flash` live-verified incl. JSON response-schema mode. Key is in
+  `.dev.vars` (git-ignored) — **the user must rotate it** (it was pasted in
+  chat) and set it via `wrangler secret put`.
+- **Built:** `src/{index,app,config}.ts`, `src/lib/{arabic,gemini,openapi}.ts`,
+  `test/{arabic,protocol}.test.ts`, `README.md` (with the required
+  `url https://payapi.market/mcp` line), `DEPLOY.md` (runbook), `wrangler.toml`,
+  `tsconfig.json`, `.dev.vars.example`, `scripts/check-gemini.mjs`.
+- **Verified 402 output:** scheme exact · network eip155:8453 · asset USDC/Base ·
+  payTo 0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6 · extra.name "USD Coin" ·
+  amounts 2000/5000/20000/30000 atomic · PAYMENT-REQUIRED header present ·
+  CORS + OPTIONS 204 · free routes 200.
+- **Bugs found and fixed by the tests** (worth remembering): `RegExp.test()`
+  with a `/g` flag is stateful and silently skipped replacements — the Arabic
+  normaliser was rewritten to be stateless; the 402 body callback must return an
+  object; three test expectations were wrong, not the code (light mode keeps
+  tashkeel by design; "بالعالم." counts as one word).
+- **Git:** repo initialised, one commit, `.dev.vars` confirmed untracked.
 
 ## Project
 Research task: find realistic ways for a person in the West Bank, Palestine with
 $0, a Bank of Palestine USD (SWIFT) account and a Trust Wallet, to earn a first
-$1–$100 online. Research phase complete → moving to build phase: an x402
-pay-per-call API ("Arabic pipeline") that pays USDC on Base to the user's wallet.
+$1–$100 online. Research phase complete → build phase: an x402 pay-per-call
+API ("Arabic pipeline") that pays USDC on Base to the user's wallet.
 
 ## Deliverables
 - `START-HERE.md` — **the build session's brief. Read this first.**
