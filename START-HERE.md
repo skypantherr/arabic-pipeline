@@ -154,21 +154,26 @@ letter folding; `index` = + punctuation stripped (dedup/index key).
 
 1. **Rotate the Gemini key** (revoke the pasted one in AI Studio, make a new
    one, put it in `.dev.vars` and `npm run secret`).
-2. **Testnet end-to-end** (free): throwaway wallet + Base Sepolia faucet funds,
-   `X402_NETWORK=eip155:84532`, `https://x402.org/facilitator`, official
-   `@x402/fetch` + `@x402/evm` client → 402 → sign → retry → 200 + receipt on
-   BaseScan. **Verify the Base Sepolia USDC address before use.**
-3. **Mainnet deploy**: `npm run login` → `npm run secret` → `npm run deploy`.
-   Then the live checklist (free routes, 402, one real $0.01 payment, receipt
-   into the user's address). The buyer needs **$0.01 USDC**; the first bounty
-   payout covers it.
+2. **Skip the testnet** — faucets now demand mainnet ETH, and it isn't needed:
+   the facilitator sponsors gas, so the buyer needs only a sliver of USDC.
+   Free checks instead: `curl https://x402.dexter.cash/supported` (already
+   verified: Base mainnet + `exact` + `extra.name "USD Coin"` + floor 1402
+   atomic = $0.0014, so all our prices clear it; `gasSponsored: true`),
+   `npm test`, `node scripts/check-gemini.mjs`.
+3. **Mainnet deploy**: Cloudflare auth (one click via `npm run login`, or paste
+   an API token + Account ID for a headless flow) → `npm run secret` →
+   `npm run deploy`. Then the live checklist (free routes, 402, one real $0.01
+   payment, receipt into the user's address). The buyer needs **$0.01 USDC**
+   and **no ETH**; the money comes from the first Superteam bounty payout
+   ($25) or $1 of USDC sent by anyone.
 4. **Publish**: PayAPI Market form (they run a $0.10 canary → settlement-verified
    badge), official MCP registry, x402scan registry, Coinbase Bazaar. Add the
    **MCP server** with `@x402/mcp` (name `io.github.skypantherr/arabic-pipeline`).
    486 of PayAPI's 832 listings expose MCP endpoints — that's the real
    discovery channel. README already contains the required
    `url https://payapi.market/mcp` line.
-5. **Push to GitHub** (`skypantherr/arabic-pipeline`) via GitHub Desktop.
+5. **Push to GitHub** (`skypantherr/arabic-pipeline`) via GitHub Desktop — not
+   blocking for the service, only for the MCP listing.
 6. **30-day scoreboard**: calls, unique buyers, revenue per call.
    Success = 10 buyers × 500 calls × $0.02 ≈ $100/month. Kill = 0 calls in 30
    days → repoint the same engine at a proven-thin class (regulatory/filings

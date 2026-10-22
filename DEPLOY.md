@@ -32,32 +32,56 @@ Everything below is ordered. Steps marked **[USER]** need a human click.
 
 ---
 
-## Phase 1 — testnet end-to-end (free, no card)
+## Phase 1 — free integration checks (no funds, no faucet)
 
-Base Sepolia, free faucet funds, public `x402.org` facilitator. This proves the
-whole flow — including real settlement — before a single cent of real money moves.
+**Skip the testnet.** Testnet faucets now demand mainnet ETH, and it turns out
+you don't need testnet at all: the facilitator sponsors gas, so the buyer only
+ever needs a tiny bit of **USDC** and never any ETH.
 
-1. **[USER]** Create a *throwaway* EVM wallet for testing only (never fund it
-   with anything real). Generate a key locally, e.g.
-   `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
-   → prefix with `0x` and keep it in `.dev.vars` as `TEST_EVM_PRIVATE_KEY`.
-2. **[USER]** Get test ETH from a Base Sepolia faucet, and test USDC from the
-   Circle testnet faucet (USDC Sepolia address is
-   `0x036CbD53842c5426634e7929541eC2318f3dCF7e` — **verify this before use**).
-3. Set the testnet config (do NOT commit it): `.dev.vars` →
-   `X402_NETWORK=eip155:84532`, `X402_FACILITATOR_URL=https://x402.org/facilitator`.
-4. Write a tiny x402 client using the official SDK
-   (`@x402/fetch` + `@x402/evm`) and call `POST /text/normalize`:
-   expect `402` → sign → retry with `PAYMENT-SIGNATURE` → expect `200` and a
-   settlement receipt. Confirm the receipt on BaseScan.
-5. Only when step 4 passes, flip `wrangler.toml` back to mainnet.
+These checks cost $0 and cover most of the risk:
+
+1. `curl https://x402.dexter.cash/supported` → confirms the facilitator is
+   live and advertises **Base mainnet (`eip155:8453`) + scheme `exact` +
+   `extra.name "USD Coin"`**, with `minPaymentAmountAtomic: 1402` ($0.0014
+   floor — all four of our prices, from $0.002 up, clear it),
+   `assetTransferMethod: "permit2"` and `gasSponsored: true` (the buyer needs
+   no ETH). Extensions include `bazaar`.
+   **Already verified on 22 Oct 2026 — free to re-run any time.**
+2. `npm test` → 18/18 green (the 402 challenge is asserted field-by-field, so
+   the wire format is already proven).
+3. `node scripts/check-gemini.mjs` → live Gemini check (key + both models).
+4. After deploying: `GET /`, `GET /health`, `GET /openapi.json` are free and
+   prove the Worker is live.
+
+**The only step that needs money** is one real $0.01 payment (Phase 2, step 9)
+to prove settlement. Sources, cheapest first:
+- the **first Superteam Earn bounty payout** ($25 USDC) — the fast lane is
+  already the plan and it funds this;
+- or **$1 of USDC sent to the wallet by anyone** (friend, colleague) on Base.
+  The buyer needs USDC only, never ETH, because the facilitator sponsors gas.
+
+A testnet rehearsal is optional and not required.
+
+---
 
 ## Phase 2 — mainnet deploy
 
-6. **[USER]** `npm run login` — opens a browser for Cloudflare OAuth. Approve the
-   account `skypantherr@hotmail.com`.
-7. **[USER]** `npm run secret` → paste the (rotated) `GEMINI_API_KEY`. This sets
-   it as an encrypted Worker secret, not a plain variable.
+6. **[USER]** Authenticate Cloudflare — pick one:
+   - **Browser OAuth (simplest):** `npm run login` opens a tab, you click
+     "Allow", and wrangler stores a token on this machine so later deploys need
+     no browser. One click, full account access.
+   - **API token (no browser loop):** Cloudflare dashboard → My Profile → API
+     Tokens → Create Token → template **"Edit Cloudflare Workers"** → copy the
+     token; also copy your **Account ID** (Workers & Pages overview). Then set
+     `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the environment and
+     `wrangler deploy` works headlessly. The token needs
+     *Account → Workers Scripts: Edit*.
+7. **Gemini key (production secret).** Either type it when prompted
+   (`npm run secret` → `GEMINI_API_KEY` → paste → Enter), or pipe it
+   non-interactively: `echo "<key>" | npx wrangler secret put GEMINI_API_KEY`.
+   **Rotate it first** — the current one was pasted into a chat, so treat it as
+   public: revoke it in Google AI Studio and issue a new one. The new key also
+   goes into `.dev.vars` for local dev.
 8. `npm run deploy` → gives the `https://arabic-pipeline.<sub>.workers.dev` URL.
 9. Sanity checks against the live URL:
    - `GET /` → service info (200).
@@ -65,9 +89,8 @@ whole flow — including real settlement — before a single cent of real money 
    - `GET /health` → 200.
    - `POST /text/normalize` without payment → 402 with the correct challenge.
    - `POST /text/normalize` with a real payment → 200 + a BaseScan receipt
-     landing in `0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6`.
-   - The live test needs **$0.01 of USDC** on Base (the buyer needs USDC; the
-     facilitator pays gas). The first Superteam bounty payout covers this.
+     landing in `0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6`. Needs **$0.01
+     USDC** on Base in the *buyer* wallet; no ETH needed.
 
 ## Phase 3 — publish the listing (this is what makes agents find you)
 
