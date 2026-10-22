@@ -171,23 +171,25 @@ suspected Worker hang from inside Cloudflare before changing Worker code.**
 4. **Gemini key rotation**, whenever the user gets to it (their own browser).
 
 ## Still open — needs the user
-1. **Push the repo to GitHub** (`skypantherr/arabic-pipeline`). The MCP
-   registry entry's `repository` field already points at
-   `https://github.com/skypantherr/arabic-pipeline`, but that repo does not
-   exist yet. The MCP **publish** is done (it only needed the namespace
-   check), but the repository link is dead until the repo is pushed.
-   **Note on the local git credential:** `git credential fill` on this machine
-   returns a token for a *different* GitHub account
-   (`Abdullah-N-Abdalaziz`), and GitHub Desktop's own token store is empty —
-   so an agent-side `git push` would push to the wrong account. The user must
-   do it (GitHub Desktop is signed in as `skypantherr`).
+1. ~~Push the repo to GitHub~~ — **done**, see "Done — for the record" below.
 2. **Confirm the PayAPI canary** when their email arrives, and record the
    receipt hash. PayAPI reviews within 24h and then pays the listed route
    once (cap $0.10); the receipt becomes the listing's settlement-verified
    badge. Re-check with `GET https://payapi.market/agent/search?q=arabic`
    (that index only shows live + verified listings, so absence before then is
    expected, not a failure).
-3. **Gemini key rotation**, whenever the user gets to it (their own browser).
+   - Their first email ("The form accepted Arabic Pipeline API. That is not
+     live. Next we pay one call… No action needed unless we email you.")
+     confirms the **form** was accepted and the paid check is still pending.
+     Nothing is required from the user unless PayAPI emails a failure.
+3. **Gemini key rotation.** The user has created a new key in Google AI
+   Studio but has not installed it. They run
+   `node scripts/set-gemini-key.mjs --deploy` in their own terminal — the key
+   is typed with echo off and piped straight into the Worker secret, so it
+   never enters the agent's chat context. **Then they delete the old key in
+   AI Studio** (it was pasted into a chat, so treat it as public). Order
+   matters: install new → verify with `node scripts/check-gemini.mjs` →
+   delete old, so `/audio/transcribe` and `/doc/extract` never go dark.
 
 ### Done — for the record
 - **MCP registry publish**: the user completed the GitHub device-code login
@@ -195,6 +197,19 @@ suspected Worker hang from inside Cloudflare before changing Worker code.**
   token was ever shared with the agent — the CLI performs the OAuth
   handshake itself and stores the token at
   `~/.config/mcp-publisher/token.json`.
+- **GitHub repo pushed**: `skypantherr/arabic-pipeline` created (public) and
+  pushed, branch `main`. The agent browser is signed into GitHub as
+  `skypantherr`, and GitHub Desktop had an OAuth token for that account
+  stored in Windows Credential Manager under
+  `GitHub - https://api.github.com/skypantherr` (scopes `repo, user,
+  workflow`). The **other** credential, `git:https://github.com` →
+  `Abdullah-N-Abdalaziz`, belongs to the user's other GitHub account and was
+  deliberately **not** used. The push used a one-off credential helper scoped
+  to that single command, so nothing in the global git config changed.
+  Verified: no key patterns, no `gho_` tokens and no assigned
+  `GEMINI_API_KEY=` values anywhere in the pushed tree (35 files).
+  - The repo's `repository` field in `server.json` now points at a real
+    public repo, so the MCP registry entry's link resolves.
 
 ## Tool notes (new this session)
 - `wrangler tail` output is the fastest way to see Worker-side exceptions; the

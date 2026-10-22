@@ -33,10 +33,14 @@ Everything below is ordered. Steps marked **[USER]** need a human click.
 - [x] `.dev.vars` created (git-ignored) with `GEMINI_API_KEY`; `.dev.vars.example`
       is the committed template.
 
-> **Key rotation is deliberately deferred** (user's instruction): the key in
-> `.dev.vars` works and is set as a production secret. When the user chooses
-> to rotate it, they create the new key themselves in their own browser and
-> run `npm run secret`. Do not open Google sign-in in the agent browser.
+> **Key rotation status:** the user has created a new key in Google AI
+> Studio but has **not yet installed it**. The live Worker still holds the
+> old key, which was pasted into a chat and should be treated as public.
+> Rotation is done by the user in their own terminal via
+> `node scripts/set-gemini-key.mjs --deploy` (the key never enters the
+> agent's chat context), then the old key is deleted in AI Studio. Order
+> matters: install new → verify → delete old, so the model-backed routes
+> never go dark.
 
 ---
 
@@ -83,10 +87,25 @@ A testnet rehearsal is optional and not required.
      `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the environment and
      `wrangler deploy` works headlessly. The token needs
      *Account → Workers Scripts: Edit*.
-7. **Gemini key (production secret).** Either type it when prompted
-   (`npm run secret` → `GEMINI_API_KEY` → paste → Enter), or pipe it
-   non-interactively: `Get-Content .dev.vars | Select-String '^GEMINI_API_KEY=' | ForEach-Object { $_.Line.Split('=')[1] } | npx wrangler secret put GEMINI_API_KEY`.
-   The new key also goes into `.dev.vars` for local dev.
+7. **Gemini key (production secret).** The key was pasted into chat in an
+   earlier session, so it should be treated as public and rotated. The user
+   creates the new key themselves in Google AI Studio; **the key is never
+   pasted into a chat with the agent.** Run this in your own terminal, in the
+   project folder:
+
+   ```bash
+   node scripts/set-gemini-key.mjs --deploy
+   ```
+
+   It prompts for the key with echo off, writes it to `.dev.vars`
+   (git-ignored), and pipes it into `wrangler secret put GEMINI_API_KEY`.
+   Without `--deploy` it only writes the local `.dev.vars`.
+   To update the MCP Worker as well: `npx wrangler deploy -c wrangler.mcp.toml`.
+
+   **Then revoke the old key** in Google AI Studio (AI Studio → API Keys →
+   the old key → ⋮ → Delete). Order matters: install the new key first
+   (above), then delete the old one, so the two model-backed routes never go
+   dark. Re-run `node scripts/check-gemini.mjs` to confirm the new key works.
 8. `npm run deploy` → gives the `https://arabic-pipeline.<sub>.workers.dev` URL.
    The MCP server is a **second Worker** with its own config file:
    `npx wrangler deploy -c wrangler.mcp.toml`.
