@@ -1,0 +1,16 @@
+name = "arabic-pipeline"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Paid on Base mainnet. Change to eip155:84532 for Base Sepolia (testnet).
+[vars]
+X402_NETWORK = "eip155:8453"
+X402_PAY_TO = "0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6"
+# Public, free, no account required. Dev/testnet alternative: https://x402.org/facilitator
+X402_FACILITATOR_URL = "https://x402.dexter.cash"
+GEMINI_TRANSCRIBE_MODEL = "gemini-3.5-transcribe"
+GEMINI_VISION_MODEL = "gemini-3.6-flash"
+
+[observability]
+enabled = true

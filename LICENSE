@@ -1,0 +1,19 @@
+Copyright (c) 2026 skypantherr. All rights reserved.
+
+This repository is published so that the service can be audited and so that
+buyers can see exactly what they are paying for. No licence is granted.
+
+You may read, clone and run this code for evaluation. You may not copy,
+modify, redistribute, sublicense or sell it, or use it to operate a competing
+service, without written permission from the copyright holder.
+
+The API itself is sold per call under the terms published at
+https://arabic-pipeline.arabic-pipeline.workers.dev/ ; this file governs the
+source code only.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

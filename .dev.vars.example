@@ -1,0 +1,3 @@
+# Local development secrets. NOT committed (.gitignore).
+# Copy to .dev.vars and fill in. For production use: npm run secret  (wrangler secret put)
+GEMINI_API_KEY=

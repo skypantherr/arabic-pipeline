@@ -1,0 +1,15 @@
+name = "arabic-pipeline-mcp"
+main = "src/mcp.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Paid on Base mainnet. Same wallet and facilitator as the REST API.
+[vars]
+X402_NETWORK = "eip155:8453"
+X402_PAY_TO = "0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6"
+X402_FACILITATOR_URL = "https://x402.dexter.cash"
+GEMINI_TRANSCRIBE_MODEL = "gemini-3.5-transcribe"
+GEMINI_VISION_MODEL = "gemini-3.6-flash"
+
+[observability]
+enabled = true
