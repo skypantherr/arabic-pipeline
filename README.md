@@ -30,6 +30,7 @@ payment answers with the x402 challenge, and your client pays it on Base.
 | `llms.txt` (agent-readable summary) | `https://arabic-pipeline.arabic-pipeline.workers.dev/llms.txt` |
 | x402scan | `https://www.x402scan.com/server/298e1e2b-3f5c-4890-9791-6d063fd20931` |
 | mcprush (MCP marketplace) | `https://mcprush.com/skypantherr/arabic-pipeline-api-mcp` |
+| PayAPI Market (settlement-verified listing) | `https://payapi.market/api/arabic-pipeline-api` |
 | MCP registry | `io.github.skypantherr/arabic-pipeline` (v0.2.0, active) |
 | Source | `https://github.com/skypantherr/arabic-pipeline` |
 
@@ -111,6 +112,13 @@ is at `GET /openapi.json`.
   (`https://x402.dexter.cash` — no account, no fees). The facilitator only
   executes the buyer's signed payment; it never holds funds.
 - Settlement destination: `0x05523af5bd166816D1418Ebf7D6371e1fFB1D2e6`.
+
+PayAPI Market independently verified this deployment by buying a call and
+publishing the receipt: `POST /text/normalize` for **$0.005 USDC**, settled in
+transaction
+[`0xfc3e42f9…73ce9c`](https://basescan.org/tx/0xfc3e42f9f1b60fc13888cba6b400ef78cb966b1fdbcdcd2682aa99bec573ce9c)
+at block 53,330,178 on Base. The listing is
+[payapi.market/api/arabic-pipeline-api](https://payapi.market/api/arabic-pipeline-api).
 
 ## Model endpoints
 

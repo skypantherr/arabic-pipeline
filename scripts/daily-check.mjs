@@ -11,6 +11,7 @@
  *   - x402scan: transactions / volume / buyers (via r.jina.ai, best-effort)
  *   - MCP registry: is io.github.skypantherr/arabic-pipeline still active?
  *   - mcprush: tool count, version and grade a buyer sees on the listing
+ *   - PayAPI Market: is the listing still live, verified and carrying our receipt?
  *
  * Caveat: this machine reaches the internet through a TLS-intercepting proxy,
  * so a small fraction of local fetches hang or fail spuriously (see DEPLOY.md,
@@ -244,7 +245,46 @@ async function timedFetch(url, opts = {}, timeoutMs = 15000) {
   }
 }
 
-// ── 7. Append to the private scoreboard (append-only log section) ────────────
+// ── 7. PayAPI Market listing ─────────────────────────────────────────────────
+// PayAPI Market bought a call on 2026-10-31 and published the receipt, which is
+// the only independent proof that this deployment settles real money. That proof
+// lives on their side and can disappear: the listing can be delisted, paused, or
+// the receipt swapped. Their `get_api` MCP tool is free, read-only and spends
+// nothing, so read the listing through it and pin the transaction we expect.
+const PAYAPI_TX = "0xfc3e42f9f1b60fc13888cba6b400ef78cb966b1fdbcdcd2682aa99bec573ce9c";
+{
+  try {
+    const r = await timedFetch("https://payapi.market/mcp", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "get_api", arguments: { id: "arabic-pipeline-api" } },
+      }),
+    }, 20000);
+    const outer = JSON.parse(r.body ?? "{}");
+    const listing = JSON.parse(outer.result?.content?.[0]?.text ?? "{}");
+    if (!listing.slug) throw new Error(`no listing (status ${r.status})`);
+    const routes = listing.verified_routes ?? [];
+    const receipt = routes.find((v) => v.tx_hash === PAYAPI_TX);
+    const verified = listing.payment_verified === true && Boolean(receipt);
+    record(
+      "PayAPI listing",
+      verified,
+      listing.payment_verified === true
+        ? `live, verified, ${listing.verified_route_count ?? routes.length} route(s), ` +
+          `${listing.endpoints_count ?? "?"} endpoints, $${listing.price_min}-$${listing.price_max}, ` +
+          `receipt ${receipt ? "matches" : "MISSING/CHANGED"}`
+        : `NOT verified (paused=${listing.verification_paused ?? "?"})`,
+    );
+  } catch (err) {
+    record("PayAPI listing", false, `error: ${String(err).slice(0, 80)}`);
+  }
+}
+
+// ── 8. Append to the private scoreboard (append-only log section) ────────────
 {
   const stamp = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
   const now = new Date().toISOString().slice(0, 10);
@@ -252,11 +292,12 @@ async function timedFetch(url, opts = {}, timeoutMs = 15000) {
   const scanLine = results.find((r) => r.name === "x402scan (best-effort)")?.detail ?? "?";
   const regLine = results.find((r) => r.name === "MCP registry")?.detail ?? "?";
   const mcprushLine = results.find((r) => r.name === "mcprush listing")?.detail ?? "?";
+  const payapiLine = results.find((r) => r.name === "PayAPI listing")?.detail ?? "?";
   const paidLine = results.find((r) => r.name === "REST paid-route 402 (the landmine guard)")?.detail ?? "?";
   const failed = results.filter((r) => !r.ok);
 
   const entry =
-    `- ${stamp} — balance: ${usdcLine} | paid route: ${paidLine} | x402scan: ${scanLine} | registry: ${regLine} | mcprush: ${mcprushLine}` +
+    `- ${stamp} — balance: ${usdcLine} | paid route: ${paidLine} | x402scan: ${scanLine} | registry: ${regLine} | mcprush: ${mcprushLine} | payapi: ${payapiLine}` +
     (failed.length ? ` | WARN: ${failed.map((f) => f.name).join(", ")}` : " | all green");
 
   let text = "";

@@ -273,7 +273,13 @@ export function buildOpenApi(
         "for a stack of up to five call POST /doc/extract/batch with {documents: [{document_base64, mime_type?, id?}]} " +
         "($0.10 the batch, $0.02 per document instead of $0.03). Prices are listed per operation in x-payment-info.",
       contact: { email: "skypantherr@hotmail.com" },
-      license: { name: "MIT", identifier: "MIT" },
+      // Matches LICENSE: proprietary, all rights reserved. There is no SPDX
+      // identifier for that, so `identifier` is deliberately absent — claiming
+      // "MIT" here advertised terms the repository does not grant.
+      license: {
+        name: "Proprietary",
+        url: "https://github.com/skypantherr/arabic-pipeline/blob/main/LICENSE",
+      },
     },
     servers: [{ url: "/", description: "This deployment." }],
     security: [{ [SECURITY_SCHEME]: [] }],
