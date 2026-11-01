@@ -95,7 +95,7 @@ them.
 
 ## 5. Discovery surfaces
 
-The service is listed in four places. All of them are free.
+The service is listed in four places, all free, plus one validator.
 
 - **MCP registry** — `server.json` (namespace `io.github.skypantherr`, verified
   by GitHub auth). `mcp-publisher login github`, then `mcp-publisher publish
@@ -106,6 +106,14 @@ The service is listed in four places. All of them are free.
 - **mcprush** — the MCP marketplace listing. Its studio reads `tools/list` from
   the live MCP endpoint, so after adding or renaming a tool use *Tool surface →
   Read the tools again*; do not wait for the monthly scan.
+- **PayAPI Market** — `https://payapi.market/api/arabic-pipeline-api`. Their
+  verifier bought a real call on 31 Oct 2026: $0.005 USDC for
+  `POST /text/normalize`, settled in tx
+  [`0xfc3e42f9…73ce9c`](https://basescan.org/tx/0xfc3e42f9f1b60fc13888cba6b400ef78cb966b1fdbcdcd2682aa99bec573ce9c)
+  at block 53,330,178 on Base. A live listing cannot be edited from here
+  (re-submitting returns "already submitted"), and the published card lags the
+  API, so treat `/openapi.json` and the MCP `tools/list` as the source of truth
+  rather than the card's route count.
 - **Coinbase x402 Bazaar** — validate a route with
   `POST https://api.cdp.coinbase.com/platform/v2/x402/validate`
   (`{"resource":"<paid route URL>","method":"POST"}`). Actual indexing happens on
